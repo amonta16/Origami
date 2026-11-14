@@ -111,6 +111,9 @@ export type Treatment = {
   duration_min?: number | null;
   image_url?: string | null;
   popular?: boolean;
+  /** set by withStockPhotos: the photo is a stock stand-in, or a stock backup for a failed load */
+  image_is_stock?: boolean;
+  image_fallback?: string;
 };
 
 /** Zone ids used for landmarks, masks, heat maps and treatment matching. */

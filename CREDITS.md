@@ -31,6 +31,7 @@ Every open-source library, API, font and model used in Facet, with its license a
 | Image | Source and license | Where |
 |---|---|---|
 | "A woman with dark hair" (photo-1652226825940-46ad2a55d132) | [Unsplash](https://unsplash.com/photos/a-woman-with-dark-hair-0NDVW4wO1Ms), free under the Unsplash License; hotlinked from Unsplash's CDN | Example face on the skin-analysis card and the scan consent screen, labeled "Example photo · Unsplash". Landmarks measured with MediaPipe in the browser. |
+| Stock treatment, product and room photos (about 30, IDs listed in `src/lib/stock-photos.ts`) | [Unsplash](https://unsplash.com), free under the Unsplash License, searched with the "free" license filter on Nov 14, 2026; hotlinked from Unsplash's CDN | Fill empty photo slots in patient apps (treatments, skincare, packages, home hero, About). Matched to the treatment type, never before/after results. The app footer says "Some photos are stock images" and the treatment page labels them "Stock photo". |
 | Clinic logos, photos and menus in preview apps | The spa's own public website, read by the owner funnel | That spa's private preview only, labeled "Preview · not live yet" |
 
 ## Services
@@ -52,6 +53,7 @@ Every open-source library, API, font and model used in Facet, with its license a
 |---|---|---|
 | MediaPipe Face Landmarker (float16) | Google, on-device | Live 3D face mesh, quality gates, zone masks |
 | gemini-3.5-flash (default), gemini-3-flash-preview, gemini-3.5-flash-lite, gemini-3.1-flash-lite, gemini-3.1-pro-preview | Google | Skin analysis (JSON schema) with an automatic fallback chain; owner funnel site reading and menu extraction |
+| gemini-3.1-flash-lite, gemini-3.5-flash-lite | Google | Owner funnel type-ahead: proposes med spas matching what the owner types. Every proposal is checked by loading the spa's website before it is shown. |
 | gpt-6.1-terra | OpenAI | Skin analysis option in the tester model picker (needs credits) |
 | gemini-nano-banana-2.1 | Google | After-simulation candidate (prompt-only edit, our mask composites) |
 | FLUX Kontext [pro], FLUX.1 Fill [pro] | Black Forest Labs via fal.ai | After-simulation candidates (reference edit; masked inpaint) |

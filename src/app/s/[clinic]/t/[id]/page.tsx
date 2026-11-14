@@ -27,7 +27,10 @@ async function Treatment({ params }: { params: PageProps<"/s/[clinic]/t/[id]">["
 
   return (
     <PatientShell clinic={clinic} patient={patient} active="shop" back={{ href: `${base}/shop?tab=treatments`, title: "Shop" }}>
-      <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/3] rounded-none" />
+      <div className="relative">
+        <ItemArt src={t.image_url} fallback={t.image_fallback} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/3] rounded-none" />
+        {t.image_is_stock && <span className="absolute bottom-2.5 right-2.5 rounded-full bg-black/45 px-2 py-0.5 text-[10px] text-white/90">Stock photo</span>}
+      </div>
       <div className="px-5 pt-5">
         <span className="inline-block rounded-full bg-[#ececee] px-3 py-1 text-[12px] font-bold tracking-[0.06em] text-[#4a4d55]">TREATMENT</span>
         <h1 className="mt-3 text-[28px] font-medium leading-tight tracking-[-0.02em]">{t.name}</h1>

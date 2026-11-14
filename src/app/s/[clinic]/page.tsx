@@ -4,7 +4,8 @@ import { PatientShell } from "@/components/patient/patient-shell";
 import { JoinTrigger } from "@/components/patient/patient-provider";
 import { GiftCard } from "@/components/patient/gift-card";
 import { ScanCard } from "@/components/patient/scan-card";
-import { ItemArt } from "@/components/patient/item-art";
+import { CoverPhoto, ItemArt } from "@/components/patient/item-art";
+import { anyStock, clinicPhotos } from "@/lib/stock-photos";
 import { CATEGORY_LABEL, Icon } from "@/components/patient/icons";
 import { treatmentIcon } from "@/components/patient/sheet-items";
 import { getTreatments } from "@/lib/data/clinics";
@@ -34,18 +35,16 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
   const tel = clinic.phone?.replace(/[^\d+]/g, "");
   const bookHref = clinic.booking_url ?? (tel ? `tel:${tel}` : `${base}/shop?tab=treatments`);
   const visitPts = clinic.visit_points ?? 50;
+  const photos = clinicPhotos(clinic);
+  // some sites list only the street; add the city so the map lands in the right town
+  const mapQuery = clinic.address && clinic.city && !clinic.address.toLowerCase().includes(clinic.city.toLowerCase()) ? `${clinic.address}, ${clinic.city}` : clinic.address ?? "";
 
   return (
     <PatientShell clinic={clinic} patient={patient} active="home">
       {/* hero + points pill */}
       <section className="relative">
         <div className="relative aspect-[4/3] overflow-hidden bg-brand-deep">
-          {clinic.hero_photo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={clinic.hero_photo_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          ) : (
-            <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(110%_80%_at_85%_10%,rgba(255,255,255,.18),transparent_55%),linear-gradient(160deg,var(--brand)_0%,var(--brand-deep)_100%)]" />
-          )}
+          <CoverPhoto src={photos.hero} fallback={photos.heroFallback} alt="" />
           <div aria-hidden="true" className="absolute inset-x-0 top-0 h-3/5 bg-gradient-to-b from-black/45 to-transparent" />
           <div className="absolute left-5 right-5 top-5 text-white">
             <h1 className="text-[22px] font-bold leading-[1.2] tracking-[-0.015em] drop-shadow-sm">{patient?.first_name ? `Welcome back, ${patient.first_name}!` : `Welcome to ${clinic.name}`}</h1>
@@ -91,7 +90,7 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
           <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5">
             {grid.map((t) => (
               <Link key={t.id} href={`${base}/t/${t.id}`} className="block">
-                <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/5] rounded-[10px]" />
+                <ItemArt src={t.image_url} fallback={t.image_fallback} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/5] rounded-[10px]" />
                 <p className="mt-2.5 truncate text-[14px]">{t.name}</p>
                 <p className="mt-0.5 text-[14px] font-medium">{t.price_cents != null ? money(t.price_cents, { from: true }) : "Price on consultation"}</p>
               </Link>
@@ -185,7 +184,7 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
             {explainers.map((t) => (
               <li key={t.id} className="w-[46%] shrink-0">
                 <Link href={`${base}/t/${t.id}`} className="block overflow-hidden rounded-[14px] border border-[#ececef] bg-white">
-                  <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/3] rounded-none" />
+                  <ItemArt src={t.image_url} fallback={t.image_fallback} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/3] rounded-none" />
                   <div className="p-3">
                     {t.category && <span className="inline-block rounded-full bg-[#ececee] px-2 py-0.5 text-[10px] font-bold tracking-[0.06em] text-[#5a5d66]">{CATEGORY_LABEL[t.category].toUpperCase()}</span>}
                     <p className="mt-1.5 truncate text-[14px] font-medium">{t.name}</p>
@@ -201,17 +200,9 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
 
       {/* about + map + call */}
       <section className="px-4 pt-9">
-        {(clinic.hero_photo_url || clinic.logo_url) && (
-          <div className="relative aspect-[16/8] overflow-hidden rounded-[16px] bg-brand">
-            {clinic.hero_photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={clinic.hero_photo_url} alt={clinic.name} className="absolute inset-0 h-full w-full object-cover" />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={clinic.logo_url!} alt={clinic.name} className="absolute inset-0 m-auto max-h-[55%] max-w-[70%] object-contain brightness-0 invert" />
-            )}
-          </div>
-        )}
+        <div className="relative aspect-[16/8] overflow-hidden rounded-[16px] bg-brand">
+          <CoverPhoto src={photos.about} fallback={photos.aboutFallback} alt={photos.heroIsStock ? "" : clinic.name} />
+        </div>
         <h2 className="mt-5 text-[18px] font-semibold tracking-[-0.01em]">About us</h2>
         <p className="mt-1.5 text-[15px] leading-[1.65] text-[#6f7380]">
           {clinic.about ?? `${clinic.name} offers ${treatments.length ? treatments.slice(0, 3).map((t) => t.name.toLowerCase()).join(", ") : "aesthetic treatments"} and more.`}
@@ -221,7 +212,7 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
             <div className="relative">
               <iframe
                 title={`Map to ${clinic.name}`}
-                src={`https://www.google.com/maps?q=${encodeURIComponent(clinic.address)}&z=15&output=embed`}
+                src={`https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`}
                 className="block aspect-[16/10] w-full border-0 [filter:grayscale(1)_invert(.92)_contrast(.9)]"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
@@ -245,6 +236,7 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
 
       <p className="px-6 pt-8 text-center text-[11px] leading-relaxed text-[#9a9ca3]">
         {clinic.is_sample && <>Sample clinic for demos. Prices are typical, not a real offer. </>}
+        {anyStock(treatments, photos.heroIsStock) && <>Some photos are stock images, not taken at {clinic.name}. </>}
         Skin analysis results are cosmetic estimates, not a medical diagnosis. 18+.{" "}
         <Link href={`${base}/legal`} className="underline underline-offset-2">
           Privacy and terms

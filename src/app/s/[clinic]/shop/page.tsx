@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Chip } from "@/components/ui";
 import { PatientShell, TopTabs } from "@/components/patient/patient-shell";
 import { ItemButton } from "@/components/patient/patient-provider";
-import { ItemArt } from "@/components/patient/item-art";
+import { CoverPhoto, ItemArt } from "@/components/patient/item-art";
+import { anyStock, clinicPhotos, withProductPhotos } from "@/lib/stock-photos";
 import { CATEGORY_LABEL, Icon, type IconName } from "@/components/patient/icons";
 import { productItem, treatmentIcon } from "@/components/patient/sheet-items";
 import { getTreatments } from "@/lib/data/clinics";
@@ -30,7 +31,8 @@ async function Shop({ params, searchParams }: Pick<PageProps<"/s/[clinic]/shop">
   const sp = await searchParams;
   const tab: Tab = sp.tab === "memberships" || sp.tab === "treatments" ? sp.tab : "browse";
   const { clinic, patient, base } = await loadPatientPage(slug);
-  const [treatments, products, plans] = await Promise.all([getTreatments(clinic.id), getProducts(clinic.id), getPlans(clinic.id)]);
+  const [treatments, rawProducts, plans] = await Promise.all([getTreatments(clinic.id), getProducts(clinic.id), getPlans(clinic.id)]);
+  const products = withProductPhotos(clinic.id, rawProducts);
   const href = (q: Record<string, string | undefined>) => {
     const s = new URLSearchParams(Object.entries(q).filter(([, v]) => v) as Array<[string, string]>).toString();
     return `${base}/shop${s ? `?${s}` : ""}`;
@@ -46,8 +48,8 @@ async function Shop({ params, searchParams }: Pick<PageProps<"/s/[clinic]/shop">
           { key: "treatments", label: "Treatments", href: href({ tab: "treatments" }) },
         ]}
       />
-      {tab === "browse" && <Browse base={base} treatments={treatments} products={products} hasPlans={plans.length > 0} href={href} />}
-      {tab === "memberships" && <Memberships plans={plans} currentPlanId={patient?.plan?.id ?? null} clinicName={clinic.name} base={base} photo={clinic.hero_photo_url ?? null} />}
+      {tab === "browse" && <Browse base={base} clinicName={clinic.name} treatments={treatments} products={products} hasPlans={plans.length > 0} href={href} />}
+      {tab === "memberships" && <Memberships plans={plans} currentPlanId={patient?.plan?.id ?? null} clinicName={clinic.name} base={base} photo={clinicPhotos(clinic)} />}
       {tab === "treatments" && (
         <Treatments
           base={base}
@@ -66,14 +68,16 @@ async function Shop({ params, searchParams }: Pick<PageProps<"/s/[clinic]/shop">
 
 function Browse({
   base,
+  clinicName,
   treatments,
   products,
   hasPlans,
   href,
 }: {
   base: string;
+  clinicName: string;
   treatments: Treatment[];
-  products: Product[];
+  products: Array<Product & { image_fallback?: string; image_is_stock?: boolean }>;
   hasPlans: boolean;
   href: (q: Record<string, string | undefined>) => string;
 }) {
@@ -129,7 +133,7 @@ function Browse({
           <div className="grid grid-cols-2 gap-x-3 gap-y-6">
             {all.map((t) => (
               <Link key={t.id} href={`${base}/t/${t.id}`} className="block">
-                <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[1/1.08] rounded-[12px]" />
+                <ItemArt src={t.image_url} fallback={t.image_fallback} icon={treatmentIcon(t)} alt={t.name} className="aspect-[1/1.08] rounded-[12px]" />
                 <p className="mt-2.5 truncate text-[15px]">{t.name}</p>
                 <p className="mt-0.5 text-[15px] font-medium">{t.price_cents != null ? money(t.price_cents, { from: true }) : "Price on consultation"}</p>
               </Link>
@@ -150,7 +154,11 @@ function Browse({
               {items.map((p) => (
                 <li key={p.id} className="w-[44%] shrink-0 snap-start">
                   <ItemButton item={productItem(p)}>
-                    <ItemArt src={p.image_url} icon={row.icon} alt={p.name} tone={row.kind === "gift_card" ? "brand" : "muted"} className="rounded-[12px]" />
+                    {row.kind === "gift_card" && !p.image_url ? (
+                      <GiftCardArt clinicName={clinicName} cents={p.price_cents} />
+                    ) : (
+                      <ItemArt src={p.image_url} fallback={p.image_fallback} icon={row.icon} alt={p.name} className="rounded-[12px]" />
+                    )}
                     <p className="mt-2.5 line-clamp-2 text-[14px] leading-snug">{p.name}</p>
                     <p className="mt-0.5 text-[14px] font-medium">{money(p.price_cents)}</p>
                   </ItemButton>
@@ -166,8 +174,24 @@ function Browse({
       )}
 
       <p className="px-6 pt-8 text-center text-[11px] text-ink-muted">
-        Requests go to the front desk. Nothing is charged in the app. <Link href={`${base}/legal`} className="underline underline-offset-2">Terms</Link>
+        Requests go to the front desk. Nothing is charged in the app. {anyStock([...treatments, ...products]) && <>Some photos are stock images. </>}
+        <Link href={`${base}/legal`} className="underline underline-offset-2">Terms</Link>
       </p>
+    </div>
+  );
+}
+
+/** A gift card drawn in the clinic's color, for gift cards without their own artwork. */
+function GiftCardArt({ clinicName, cents }: { clinicName: string; cents: number | null }) {
+  return (
+    <div role="img" aria-label={`${clinicName} gift card`} className="relative flex aspect-square w-full flex-col justify-between overflow-hidden rounded-[12px] bg-[linear-gradient(150deg,var(--brand)_0%,var(--brand-deep)_100%)] p-3.5 text-white">
+      <span aria-hidden="true" className="absolute -right-8 -top-10 size-32 rounded-full bg-white/10" />
+      <span aria-hidden="true" className="absolute -bottom-12 -left-6 size-28 rounded-full bg-black/10" />
+      <span className="relative line-clamp-2 text-[12px] font-semibold uppercase leading-tight tracking-[0.1em] text-white/85">{clinicName}</span>
+      <span className="relative">
+        <span className="block text-[11px] text-white/70">Gift card</span>
+        <span className="block text-[26px] font-semibold leading-none tracking-[-0.02em]">{cents != null ? money(cents) : ""}</span>
+      </span>
     </div>
   );
 }
@@ -185,7 +209,7 @@ function Memberships({
   currentPlanId: string | null;
   clinicName: string;
   base: string;
-  photo: string | null;
+  photo: ReturnType<typeof clinicPhotos>;
 }) {
   if (!plans.length) {
     return <p className="px-6 pt-16 text-center text-[14px] text-ink-muted">{clinicName} doesn&rsquo;t offer memberships yet.</p>;
@@ -197,10 +221,7 @@ function Memberships({
           <li key={m.id}>
             <Link href={`${base}/m/${m.id}`} className="block">
               <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[12px] bg-[#1b1c20]">
-                {photo && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70 grayscale" />
-                )}
+                <CoverPhoto src={photo.hero} fallback={photo.heroFallback} alt="" className="opacity-70 grayscale" />
                 <span aria-hidden="true" className="absolute inset-0 bg-black/25" />
                 <span className="relative px-3 text-center text-[14px] font-bold uppercase leading-[1.35] tracking-[0.16em] text-white">{m.name}</span>
                 {m.id === currentPlanId && <Chip tone="brand" className="absolute left-2 top-2 h-5 text-[10px]">Your plan</Chip>}
@@ -285,7 +306,7 @@ function Treatments({
         {list.map((t) => (
           <li key={t.id}>
             <Link href={`${base}/t/${t.id}`} className="block">
-              <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[16/9]" />
+              <ItemArt src={t.image_url} fallback={t.image_fallback} icon={treatmentIcon(t)} alt={t.name} className="aspect-[16/9]" />
               <div className="px-1 pt-3">
                 <Chip className="h-6 text-[10px] font-semibold tracking-[0.08em]">TREATMENT</Chip>
                 <h3 className="font-display mt-2 text-[17px]">{t.name}</h3>

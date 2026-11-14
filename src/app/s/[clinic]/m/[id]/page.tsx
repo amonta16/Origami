@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { PatientShell } from "@/components/patient/patient-shell";
 import { RequestButton } from "@/components/patient/actions";
 import { Icon } from "@/components/patient/icons";
+import { CoverPhoto } from "@/components/patient/item-art";
+import { clinicPhotos } from "@/lib/stock-photos";
 import { getPlan } from "@/lib/data/catalog";
 import { loadPatientPage } from "@/lib/patient/load";
 import { money } from "@/lib/money";
@@ -22,15 +24,13 @@ async function Membership({ params }: { params: PageProps<"/s/[clinic]/m/[id]">[
   const plan = await getPlan(clinic.id, id);
   if (!plan) notFound();
   const current = patient?.plan?.id === plan.id;
+  const photos = clinicPhotos(clinic);
   const [checks, tiles] = [plan.perks.slice(0, Math.max(2, plan.perks.length - 2)), plan.perks.slice(Math.max(2, plan.perks.length - 2))];
 
   return (
     <PatientShell clinic={clinic} patient={patient} active="shop" back={{ href: `${base}/shop?tab=memberships`, title: "Memberships" }}>
       <div className="relative aspect-[4/3] overflow-hidden bg-ink">
-        {clinic.hero_photo_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={clinic.hero_photo_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70 grayscale" />
-        )}
+        <CoverPhoto src={photos.hero} fallback={photos.heroFallback} alt="" className="opacity-70 grayscale" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" aria-hidden="true" />
         <p className="absolute inset-x-5 top-1/2 -translate-y-1/2 text-[24px] font-semibold uppercase leading-tight tracking-[0.08em] text-white">{plan.name}</p>
       </div>

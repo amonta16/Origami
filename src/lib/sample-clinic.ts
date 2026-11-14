@@ -12,7 +12,9 @@ export const SAMPLE_CLINIC: Clinic = {
   logo_url: null,
   brand_color: "#92191c",
   phone: "(805) 555-0100",
-  address: "123 Example St, San Luis Obispo, CA 93401",
+  // a public intersection, not a business address (migration 20261114000700)
+  address: "State St & Canon Perdido St, Santa Barbara, CA 93101",
+  city: "Santa Barbara",
   website: "https://example.com",
   booking_url: "https://example.com/book",
   is_sample: true,
