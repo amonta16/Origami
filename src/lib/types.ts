@@ -12,6 +12,81 @@ export type Clinic = {
   is_preview: boolean;
   first_visit_credit_cents: number | null;
   referral_credit_cents: number | null;
+  /** patient app (migration 0300); optional so the in-code sample fallback stays valid */
+  hero_photo_url?: string | null;
+  welcome_points?: number;
+  visit_points?: number;
+  referral_points?: number;
+  scan_points?: number;
+  points_per_dollar?: number;
+};
+
+export type TreatmentCategory = "injectables" | "skin" | "laser" | "body" | "wellness" | "consult";
+
+export type Product = {
+  id: string;
+  clinic_id: string;
+  kind: "package" | "skincare" | "gift_card";
+  name: string;
+  description: string | null;
+  price_cents: number | null;
+  member_price_cents: number | null;
+  sessions: number | null;
+  image_url: string | null;
+  sort: number;
+};
+
+export type MembershipPlan = {
+  id: string;
+  clinic_id: string;
+  name: string;
+  tagline: string | null;
+  monthly_price_cents: number;
+  perks: string[];
+  member_discount_pct: number;
+  monthly_points: number;
+  sort: number;
+};
+
+export type Reward = {
+  id: string;
+  clinic_id: string;
+  name: string;
+  description: string | null;
+  points_cost: number;
+  image_url: string | null;
+  sort: number;
+};
+
+export type Redemption = {
+  id: string;
+  reward_name: string;
+  points_spent: number;
+  code: string;
+  used_at: string | null;
+  created_at: string;
+};
+
+export type PurchaseRequest = {
+  id: string;
+  kind: "treatment" | "product" | "membership";
+  item_name: string;
+  price_cents: number | null;
+  status: "requested" | "confirmed" | "cancelled";
+  created_at: string;
+};
+
+/** The signed-in patient as the patient app sees them. */
+export type Patient = {
+  id: string;
+  first_name: string | null;
+  phone: string | null;
+  checkin_code: string | null;
+  points: number;
+  plan: MembershipPlan | null;
+  notifications: boolean;
+  redemptions: Redemption[];
+  requests: PurchaseRequest[];
 };
 
 export type Treatment = {
@@ -27,6 +102,10 @@ export type Treatment = {
   booking_url: string | null;
   sort: number;
   active: boolean;
+  category?: TreatmentCategory;
+  duration_min?: number | null;
+  image_url?: string | null;
+  popular?: boolean;
 };
 
 /** Zone ids used for landmarks, masks, heat maps and treatment matching. */
