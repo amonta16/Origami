@@ -24,6 +24,8 @@ export type Clinic = {
   city?: string | null;
   source_url?: string | null;
   built_at?: string | null;
+  /** desk switches (migration 0500): journey on/off and each automated offer's gift and note */
+  settings?: { scan_enabled?: boolean; journey?: Record<string, boolean>; offers?: Record<string, { gift?: string; note?: string }> } | null;
 };
 
 export type TreatmentCategory = "injectables" | "skin" | "laser" | "body" | "wellness" | "consult";

@@ -9,6 +9,9 @@ import { PlansEditor } from "@/components/desk/builder/plans";
 import { RewardsEditor } from "@/components/desk/builder/rewards";
 import { BrandForm, DetailsForm, PointsForm } from "@/components/desk/builder/settings";
 import { JourneyEditor } from "@/components/desk/builder/journey";
+import { OffersEditor } from "@/components/desk/builder/offers";
+import { getTreatments } from "@/lib/data/clinics";
+import { clinicPhotos } from "@/lib/stock-photos";
 import { resolveDesk } from "@/lib/desk/access";
 import { deskPlans, deskProducts, deskRewards, deskTreatments } from "@/lib/desk/data";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
@@ -57,7 +60,26 @@ async function Content({ params, searchParams }: Props) {
     body = <DetailsForm slug={clinic.slug} initial={{ phone: clinic.phone, address: clinic.address, website: clinic.website, booking_url: clinic.booking_url }} />;
   else if (tab.id === "settings" && sub?.id === "points")
     body = <PointsForm slug={clinic.slug} initial={{ welcome_points: clinic.welcome_points ?? 100, visit_points: clinic.visit_points ?? 50, points_per_dollar: clinic.points_per_dollar ?? 1 }} />;
-  else if (tab.id === "journey")
+  else if (tab.id === "journey" && sub?.id !== "automations") {
+    const photos = clinicPhotos(clinic);
+    const all = await getTreatments(clinic.id);
+    const popular = all.filter((t) => t.popular);
+    body = (
+      <OffersEditor
+        slug={clinic.slug}
+        initialOn={clinic.settings?.journey ?? {}}
+        initialOverrides={clinic.settings?.offers ?? {}}
+        settingsReady={settingsReady}
+        preview={{
+          clinicName: clinic.name,
+          logoUrl: clinic.logo_url,
+          hero: photos.hero,
+          heroFallback: photos.heroFallback,
+          treatments: (popular.length >= 2 ? popular : all).slice(0, 4).map((t) => ({ id: t.id, name: t.name, image_url: t.image_url ?? null, image_fallback: t.image_fallback, price_cents: t.price_cents })),
+        }}
+      />
+    );
+  } else if (tab.id === "journey")
     body = <JourneyEditor slug={clinic.slug} view={sub?.id === "automations" ? "automations" : "offers"} initial={clinic.settings?.journey ?? {}} settingsReady={settingsReady} />;
 
   return (

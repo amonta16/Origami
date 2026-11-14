@@ -6,6 +6,7 @@ import { GiftCard } from "@/components/patient/gift-card";
 import { ScanCard } from "@/components/patient/scan-card";
 import { CoverPhoto, ItemArt } from "@/components/patient/item-art";
 import { anyStock, clinicPhotos } from "@/lib/stock-photos";
+import { OFFERS, activeSeasonalOffer, resolveOffer } from "@/lib/offers";
 import { CATEGORY_LABEL, Icon } from "@/components/patient/icons";
 import { treatmentIcon } from "@/components/patient/sheet-items";
 import { getTreatments } from "@/lib/data/clinics";
@@ -36,6 +37,11 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
   const bookHref = clinic.booking_url ?? (tel ? `tel:${tel}` : `${base}/shop?tab=treatments`);
   const visitPts = clinic.visit_points ?? 50;
   const photos = clinicPhotos(clinic);
+  const offerSettings = clinic.settings?.offers ?? {};
+  const live = activeSeasonalOffer(clinic.settings?.journey ?? undefined);
+  const seasonal = live ? { offer: resolveOffer(live.def, clinic.name, offerSettings[live.def.key]), claimBy: live.claimBy } : null;
+  const welcomeDef = OFFERS.find((o) => o.key === "offer_welcome")!;
+  const welcome = { offer: resolveOffer(welcomeDef, clinic.name, offerSettings.offer_welcome), custom: Boolean(offerSettings.offer_welcome?.gift || offerSettings.offer_welcome?.note) };
   // some sites list only the street; add the city so the map lands in the right town
   const mapQuery = clinic.address && clinic.city && !clinic.address.toLowerCase().includes(clinic.city.toLowerCase()) ? `${clinic.address}, ${clinic.city}` : clinic.address ?? "";
 
@@ -70,17 +76,35 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
         </div>
       </section>
 
-      {/* a gift for you */}
-      {gift > 0 && !patient && (
+      {/* a gift for you: a switched-on seasonal offer while it runs, else the welcome gift for guests */}
+      {seasonal ? (
         <section className="px-4 pt-8">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-[21px] font-semibold tracking-[-0.015em]">A gift for you</h2>
-            <span className="text-[14px] text-[#7a7d86]">Claim by {claimBy}</span>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="truncate text-[21px] font-semibold tracking-[-0.015em]">{seasonal.offer.headline}</h2>
+            <span className="shrink-0 text-[14px] text-[#7a7d86]">Claim by {seasonal.claimBy}</span>
           </div>
           <div className="mt-3.5">
-            <GiftCard amountLabel={`${money(gift)} off your first purchase`} claimBy={claimBy} signedIn={Boolean(patient)} />
+            <GiftCard theme={seasonal.offer.theme} label={seasonal.offer.label} tag={seasonal.offer.tag} note={seasonal.offer.note} amountLabel={seasonal.offer.gift} claimBy={seasonal.claimBy} signedIn={Boolean(patient)} />
           </div>
         </section>
+      ) : (
+        gift > 0 &&
+        !patient && (
+          <section className="px-4 pt-8">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-[21px] font-semibold tracking-[-0.015em]">A gift for you</h2>
+              <span className="text-[14px] text-[#7a7d86]">Claim by {claimBy}</span>
+            </div>
+            <div className="mt-3.5">
+              <GiftCard
+                amountLabel={welcome.custom ? welcome.offer.gift : `${money(gift)} off your first purchase`}
+                note={welcome.custom ? welcome.offer.note : undefined}
+                claimBy={claimBy}
+                signedIn={Boolean(patient)}
+              />
+            </div>
+          </section>
+        )
       )}
 
       {/* popular right now */}

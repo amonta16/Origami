@@ -1,9 +1,12 @@
 import type { Clinic, TreatmentCategory } from "@/lib/types";
+import type { OfferOverride } from "@/lib/offers";
 
 /** Desk-only settings stored in clinics.settings (migration 20261114000500_desk.sql). */
 export type DeskSettings = {
   scan_enabled?: boolean;
   journey?: Record<string, boolean>;
+  /** each automated offer's gift and note, as the clinic wrote them */
+  offers?: Record<string, OfferOverride>;
 };
 
 /** Clinic row as the desk reads it. `settings` is undefined until the desk migration runs. */

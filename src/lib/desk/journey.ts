@@ -2,17 +2,13 @@
  * Journey switches the clinic can turn on now. They're saved to clinics.settings.journey;
  * nothing sends until texting is connected, and the desk says so next to every list.
  */
-export type JourneyItem = { key: string; title: string; detail: string };
+import { OFFERS } from "@/lib/offers";
+
+export type JourneyItem ={ key: string; title: string; detail: string };
 export type JourneyGroup = { title: string; items: JourneyItem[] };
 
-export const AUTOMATED_OFFERS: JourneyItem[] = [
-  { key: "offer_birthday", title: "Birthday treat", detail: "A note and bonus points in the week of their birthday" },
-  { key: "offer_anniversary", title: "One year with us", detail: "Thanks on the day they joined, a year later" },
-  { key: "offer_welcome", title: "Welcome gift", detail: "Welcome points the moment someone joins the app" },
-  { key: "offer_winback", title: "We miss you", detail: "Bonus points for anyone who hasn't visited in 90 days" },
-  { key: "offer_holiday", title: "Holiday season", detail: "A December gift-card reminder for people who love the clinic" },
-  { key: "offer_summer", title: "Summer skin", detail: "A June nudge toward sunscreen and gentle peels" },
-];
+// Offers (with their themed gifts) live in lib/offers.ts; the switches use the same keys.
+export const AUTOMATED_OFFERS: JourneyItem[] = OFFERS.map((o) => ({ key: o.key, title: o.title, detail: o.when }));
 
 export const AUTOMATIONS: JourneyGroup[] = [
   {
