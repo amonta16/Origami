@@ -18,7 +18,11 @@ Status: ✅ built · 🛠 in progress · ⏳ planned
 | 10 | 5 quick questions | Phase 3 prompt | Rebuilt from phase prompt (chip idiom from reference) | app-06 (chips) | ⏳ |
 | 11 | Reveal / contact capture | Phase 3 prompt | Rebuilt from phase prompt | — | ⏳ |
 | 12 | Book: sticky bar + sheet | Phase 3 prompt | Matched to reference (black pill CTA, bottom sheet) | app-07-check-in-code | ⏳ |
-| 13 | `/s/[clinic]/me` My plan: results, next due, points, referral, check-in code | Phase 3 + 5 prompts | Matched to reference | app-08-rewards, app-07-check-in-code, app-09-profile | ⏳ |
+| 13 | `/s/[clinic]/profile` Profile: card, points + membership tiles, check-in code, text reminders, add to home screen, call/book, sign out, my requests | Phase 3 + 5 prompts | Matched to reference | app-09-profile | ✅ |
+| 13a | `/s/[clinic]/rewards` points card, ready-to-use codes, reward catalog with redeem, ways to earn | Phase 5 prompt | Matched to reference | app-08-rewards | ✅ |
+| 13b | `/s/[clinic]/visit` center tab: check-in QR + 6-digit code, link to the AI scan | Phase 5 prompt | Matched to reference | app-07-check-in-code | ✅ |
+| 13c | Join sheet (first name, mobile, 18+, optional texts) + signed session cookie | Phase 3 prompt | Rebuilt from phase prompt; sheet idiom from reference | — | ✅ |
+| 13d | `/s/[clinic]/legal` terms, privacy, AI face scan notice, California notice | CLAUDE.md safety rules | Rebuilt (plain-language, new copy) | app-09 (legal links row) | ✅ |
 | 14 | Owner funnel: search → "Building your scanner…" → phone frame + QR | Phase 2 prompt | Rebuilt from phase prompt; phone-frame preview idiom from reference | desk-05 (phone preview) | ⏳ |
 | 15 | Owner funnel: "Make it live" form + thank-you | Phase 2 prompt | Rebuilt from phase prompt | — | ⏳ |
 | 16 | `/admin` owner leads, scanners built, funnel events | Phase 2 prompt | Matched to reference (desk list/table idiom) | desk-02-insights | ⏳ |
@@ -31,4 +35,5 @@ Status: ✅ built · 🛠 in progress · ⏳ planned
 | 23 | `/dashboard/settings` brand, booking, scanner link + QR, scan toggle | Phase 4 prompt | Matched to reference | desk-13-brand-settings, desk-10-ai-skin-scan-setting | ⏳ |
 | 24 | Dashboard shell: sidebar nav, header with brand CTA, help box | Phase 4 prompt | Matched to reference | desk-01 … desk-13 | ⏳ |
 | 25 | Check-in by QR/PIN (COULD) | Phase 4 prompt | Matched to reference | desk-03, app-07 | ⏳ if time |
-| 26 | Rewards catalog / shop / memberships (COULD) | Phase 5 prompt | Matched to reference | desk-11, app-04, app-05, app-08 | ⏳ if time |
+| 26 | `/s/[clinic]/shop`: Browse (promo banner, category icons, most booked, packages, skincare, gift cards), Memberships (plan cards), Treatments (filter, sort, treatment cards); item sheet with member price and "request" (no payment in app) | Phase 5 prompt | Matched to reference | app-04-shop, app-05-shop-packages, app-06-treatment-detail | ✅ patient side; clinic-side editors (desk-09, desk-11) ⏳ |
+| 3 | `/s/[clinic]` home rebuilt: hero + greeting, points pill, AI scan card, "Popular right now" | Phase 3 prompt | Matched to reference | app-01-home-hero, app-02-home-scan-card | ✅ |

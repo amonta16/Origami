@@ -14,7 +14,7 @@ Every open-source library, API, font and model used in Facet, with its license a
 | [@mediapipe/tasks-vision](https://github.com/google-ai-edge/mediapipe) 1.2.3 | Apache-2.0 | In-browser Face Landmarker: 478 landmarks, blendshapes, live mesh. WASM served from jsDelivr, model from Google's public model bucket |
 | [three](https://threejs.org) | MIT | Rotating 3D wireframe of the captured mesh on the results screen |
 | [@supabase/supabase-js](https://github.com/supabase/supabase-js) | MIT | Server-side database and storage client |
-| [qrcode](https://github.com/soldair/node-qrcode) | MIT | QR codes for the owner funnel and front desk (Phase 2) |
+| [qrcode](https://github.com/soldair/node-qrcode) | MIT | QR codes for the patient check-in screen, the owner funnel and front desk |
 | [server-only](https://www.npmjs.com/package/server-only) | MIT | Guards server modules from client bundles |
 
 ## Fonts (Google Fonts, served via `next/font`)
