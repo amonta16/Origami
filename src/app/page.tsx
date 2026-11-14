@@ -1,22 +1,29 @@
 import Link from "next/link";
 import { OwnerFunnel } from "@/components/funnel/owner-funnel";
 import { DeskArt, ScanArt, SiteToAppArt } from "@/components/marketing/pillar-art";
+import { FlockBackground } from "@/components/marketing/flock";
 
 // Owner funnel entry: type your spa, watch your app get built, land on your preview.
 export default function Home() {
   return (
     <main className="min-h-dvh bg-page">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5 sm:px-8">
+      <div className="relative isolate">
+        {/* flock of paper birds behind the hero, fading out before the cards */}
+        <div aria-hidden="true" className="absolute inset-0 -z-10 overflow-hidden [mask-image:linear-gradient(180deg,#000_0%,#000_70%,transparent_100%)]">
+          <FlockBackground />
+        </div>
+      <header className="relative mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5 sm:px-8">
         <span className="flex items-center gap-2 text-[17px] font-semibold tracking-[-0.02em]">
           <FacetMark />
           Facet
+          <span className="ml-1 hidden text-[12px] font-normal tracking-normal text-ink-muted sm:inline">by Atlas Engine</span>
         </span>
-        <Link href="/s/sample" className="rounded-chip px-3 py-2 text-[14px] text-ink-soft hover:bg-surface-muted hover:text-ink">
+        <Link href="/s/sample" className="rounded-chip bg-page/70 px-3 py-2 text-[14px] text-ink-soft backdrop-blur-sm hover:bg-surface-muted hover:text-ink">
           See a sample app
         </Link>
       </header>
 
-      <section className="mx-auto w-full max-w-3xl px-5 pb-10 pt-10 sm:px-8 sm:pt-20">
+      <section className="relative mx-auto w-full max-w-3xl px-5 pb-16 pt-10 sm:px-8 sm:pt-20">
         <p className="text-[14px] text-ink-muted">For med spa owners</p>
         <h1 className="font-display mt-3 text-[40px] leading-[1.02] sm:text-[60px]">Your spa&rsquo;s own app, built from your website in under a minute.</h1>
         <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-muted">
@@ -25,7 +32,9 @@ export default function Home() {
         <div className="mt-9">
           <OwnerFunnel />
         </div>
+        <p className="mt-6 text-[12px] text-ink-muted">Powered by Atlas Engine</p>
       </section>
+      </div>
 
       <section className="mx-auto grid w-full max-w-4xl gap-3 px-5 pb-16 sm:grid-cols-3 sm:px-8">
         {[
@@ -42,7 +51,7 @@ export default function Home() {
       </section>
 
       <footer className="mx-auto w-full max-w-3xl px-5 pb-10 text-[12px] leading-relaxed text-ink-muted sm:px-8">
-        Facet is a student project built at the CPVC × OCOB × CPE AI Hackathon, Cal Poly, Nov 13–15, 2026. Previews are private links, built only from public website content, and labeled &ldquo;Preview&rdquo; until a spa chooses to go live.
+        Facet is built by Atlas Engine, a student team at the CPVC × OCOB × CPE AI Hackathon, Cal Poly, Nov 13–15, 2026. Previews are private links, built only from public website content, and labeled &ldquo;Preview&rdquo; until a spa chooses to go live.
       </footer>
     </main>
   );
