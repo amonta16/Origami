@@ -2,10 +2,13 @@ import "server-only";
 
 /**
  * Vision analysis through the Gemini API (generateContent, JSON output).
- * gemini-4-hydrogen is on the free tier and accepts image input (docs checked Nov 14, 2026).
+ * Default picked by measurement on the live deployment, Sat Nov 14 2026 ~3:20 AM Pacific, via
+ * GET /api/analyze?ping=1&model=...: gemini-4-hydrogen answered "ok" in 35.7 s (free-tier queue),
+ * gemini-3-flash-preview in 1.0 s, gemini-flash-latest refused with "high demand". A scan sends
+ * nine images and must fit a 60 s function, so the fast one wins. Override with GEMINI_VISION_MODEL.
  * Gemini's JSON-schema subset drops some keywords, so callers pass a simplified schema.
  */
-export const GEMINI_VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-4-hydrogen";
+export const GEMINI_VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-3-flash-preview";
 
 function splitDataUrl(d: string) {
   const m = /^data:(image\/[a-z+]+);base64,(.*)$/i.exec(d);
