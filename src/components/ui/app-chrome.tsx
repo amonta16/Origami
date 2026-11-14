@@ -71,7 +71,7 @@ const ICONS: Record<TabKey, React.ReactNode> = {
 export function TabBar({
   active,
   base,
-  available = ["home", "scan"],
+  available = ["home", "shop", "scan", "rewards", "profile"],
   className,
 }: {
   active: TabKey;
@@ -84,9 +84,11 @@ export function TabBar({
   const tabs: Array<{ key: TabKey; href: string; label: string }> = [
     { key: "home", href: base, label: "Home" },
     { key: "shop", href: `${base}/shop`, label: "Shop" },
-    { key: "scan", href: `${base}/scan`, label: "Scan" },
-    { key: "rewards", href: `${base}/me`, label: "Rewards" },
-    { key: "profile", href: `${base}/me`, label: "Profile" },
+    // Center tab is the front-desk check-in code, as in the reference; the AI face scan
+    // is the hero card on Home and is linked from the check-in screen too.
+    { key: "scan", href: `${base}/visit`, label: "Check in" },
+    { key: "rewards", href: `${base}/rewards`, label: "Rewards" },
+    { key: "profile", href: `${base}/profile`, label: "Profile" },
   ];
   return (
     <nav
