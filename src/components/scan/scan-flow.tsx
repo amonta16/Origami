@@ -5,6 +5,7 @@ import { Button } from "@/components/ui";
 import { track } from "@/lib/events";
 import { buildAnalysisCrops, resizeDataUrl } from "@/lib/face/image";
 import type { Capture, Clinic, ScanResults, Treatment } from "@/lib/types";
+import { ClinicTheme } from "@/components/clinic-theme";
 import { AnalyzingScreen } from "./analyzing-screen";
 import { ConsentScreen } from "./consent-screen";
 import { FaceCapture } from "./face-capture";
@@ -98,8 +99,9 @@ export function ScanFlow({
     [answers, clinic.slug, ev, firstName],
   );
 
+  let body: React.ReactNode;
   if (step === "consent") {
-    return (
+    body = (
       <ConsentScreen
         clinic={clinic}
         onAgree={() => {
@@ -108,10 +110,8 @@ export function ScanFlow({
         }}
       />
     );
-  }
-
-  if (step === "capture") {
-    return (
+  } else if (step === "capture") {
+    body = (
       <FaceCapture
         onEvent={ev}
         onCapture={(c) => {
@@ -120,14 +120,10 @@ export function ScanFlow({
         }}
       />
     );
-  }
-
-  if (step === "analyzing" && capture) {
-    return <AnalyzingScreen capture={capture} step={analyzeStep} clinicName={clinic.name} />;
-  }
-
-  if (step === "results" && capture && results) {
-    return (
+  } else if (step === "analyzing" && capture) {
+    body = <AnalyzingScreen capture={capture} step={analyzeStep} clinicName={clinic.name} />;
+  } else if (step === "results" && capture && results) {
+    body = (
       <ResultsScreen
         clinic={clinic}
         treatments={treatments}
@@ -138,20 +134,26 @@ export function ScanFlow({
         onEvent={ev}
       />
     );
+  } else {
+    body = (
+      <div className="mx-auto flex min-h-dvh w-full max-w-phone flex-col px-4 pt-16">
+        <h2 className="font-display text-[24px]">The analysis didn&rsquo;t finish</h2>
+        <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">{error}</p>
+        <div className="mt-6 flex gap-3">
+          {capture && <Button onClick={() => void analyze(capture)}>Try again</Button>}
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setCapture(null);
+              setStep("capture");
+            }}
+          >
+            Retake photo
+          </Button>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-phone flex-col px-5 pt-16">
-      <h2 className="font-display text-3xl">The analysis didn&rsquo;t finish</h2>
-      <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">{error}</p>
-      <div className="mt-6 flex gap-3">
-        {capture && (
-          <Button onClick={() => void analyze(capture)}>Try again</Button>
-        )}
-        <Button variant="secondary" onClick={() => { setCapture(null); setStep("capture"); }}>
-          Retake photo
-        </Button>
-      </div>
-    </div>
-  );
+  return <ClinicTheme clinic={clinic}>{body}</ClinicTheme>;
 }

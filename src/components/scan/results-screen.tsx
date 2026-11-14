@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BottomSheet, Button, Card, Chip, ScoreRing } from "@/components/ui";
+import { AppBar, BottomSheet, Button, Card, Chip, ScoreRing } from "@/components/ui";
 import { CONCERN_BY_ID, ZONE_LABEL, simKindFor } from "@/lib/concerns";
 import { runSimulation, type SimResult } from "@/lib/sim/client";
 import type { Capture, Clinic, ScanResults, Treatment } from "@/lib/types";
@@ -49,35 +49,33 @@ export function ResultsScreen({
     }
   };
 
-  const price = (t: Treatment) => (t.price_cents != null ? `$${Math.round(t.price_cents / 100).toLocaleString()}` : "Ask");
+  const price = (t: Treatment) => (t.price_cents != null ? `$${Math.round(t.price_cents / 100).toLocaleString()}` : "Price on consultation");
+  const sevLabel = (s: string) => (s === "none" ? "Clear" : s[0].toUpperCase() + s.slice(1));
 
   return (
-    <div className="relative mx-auto min-h-dvh w-full max-w-phone pb-28">
-      {/* header */}
-      <div className="flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
-        <span className="font-display text-lg">{clinic.name}</span>
-        {clinic.is_sample && <Chip>Sample clinic</Chip>}
-      </div>
+    <div className="relative mx-auto min-h-dvh w-full max-w-phone bg-white pb-28">
+      <AppBar title={clinic.name} logoUrl={clinic.logo_url} right={clinic.is_sample ? <Chip>Sample clinic</Chip> : null} />
 
       {/* score */}
-      <section className="px-5 pt-6">
-        <p className="text-sm text-ink-muted">{firstName ? `${firstName}, your results are ready` : "Your results are ready"}</p>
-        <div className="mt-4 flex items-center gap-5">
-          <ScoreRing value={results.overall_score} potential={results.potential_score} size={168} label="Skin score" caption={`Potential ${results.potential_score}`} />
+      <section className="px-4 pt-1">
+        <p className="text-[11px] font-medium tracking-[0.12em] text-brand-ink">YOUR RESULTS</p>
+        <h1 className="font-display mt-1 text-[24px]">{firstName ? `${firstName}, here is what we found.` : "Here is what we found."}</h1>
+        <div className="mt-4 flex items-center gap-4 rounded-card border border-line bg-surface p-4">
+          <ScoreRing value={results.overall_score} potential={results.potential_score} size={150} label="Skin score" caption={`Potential ${results.potential_score}`} />
           <div className="min-w-0 flex-1">
             {results.skin_age != null && (
               <div>
-                <div className="font-display font-display-numeral text-4xl">{results.skin_age}</div>
-                <div className="text-sm text-ink-muted">skin age estimate</div>
+                <div className="font-display font-display-numeral text-[32px]">{results.skin_age}</div>
+                <div className="text-[12px] text-ink-muted">skin age estimate</div>
               </div>
             )}
-            <MeshViewer landmarks={capture.landmarks} aspect={capture.width / capture.height} size={120} className="mt-2 -ml-2" />
+            <MeshViewer landmarks={capture.landmarks} aspect={capture.width / capture.height} size={104} className="-ml-2 mt-1" />
           </div>
         </div>
-        <p className="mt-4 text-[15px] leading-relaxed">{results.insight}</p>
+        <p className="mt-3 text-[14px] leading-relaxed">{results.insight}</p>
         {results.medical_flag && (
-          <Card tone="ivory" padding="sm" className="mt-4 border border-warn/40">
-            <p className="text-sm leading-relaxed">
+          <Card tone="brand-soft" padding="sm" className="mt-3">
+            <p className="text-[13px] leading-relaxed">
               <strong className="font-medium">Worth showing a dermatologist.</strong> {results.medical_flag}
             </p>
           </Card>
@@ -85,13 +83,13 @@ export function ResultsScreen({
       </section>
 
       {/* heat map */}
-      <section className="mt-8 px-5">
+      <section className="mt-6 px-4">
         <HeatmapPhoto photo={capture.photo} landmarks={capture.landmarks} concerns={results.concerns} active={active} />
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => setActive(null)}
-            className={`shrink-0 rounded-chip border px-3 py-1.5 text-[13px] font-medium ${active === null ? "border-ink bg-ink text-ivory" : "border-line-strong bg-surface"}`}
+            className={`shrink-0 rounded-chip border px-3 py-1.5 text-[12px] font-medium ${active === null ? "border-ink bg-ink text-white" : "border-line-strong bg-surface"}`}
           >
             All
           </button>
@@ -100,7 +98,7 @@ export function ResultsScreen({
               key={c.id + c.zone}
               type="button"
               onClick={() => setActive(active === c.id ? null : c.id)}
-              className={`shrink-0 rounded-chip border px-3 py-1.5 text-[13px] font-medium ${active === c.id ? "border-ink bg-ink text-ivory" : "border-line-strong bg-surface"}`}
+              className={`shrink-0 rounded-chip border px-3 py-1.5 text-[12px] font-medium ${active === c.id ? "border-ink bg-ink text-white" : "border-line-strong bg-surface"}`}
             >
               {CONCERN_BY_ID[c.id]?.label ?? c.id}
             </button>
@@ -109,62 +107,62 @@ export function ResultsScreen({
       </section>
 
       {/* concerns */}
-      <section className="mt-6 px-5">
-        <h2 className="font-display text-2xl">What the scan found</h2>
-        <ul className="mt-3 space-y-2">
+      <section className="mt-6 px-4">
+        <h2 className="font-display text-[17px]">What the scan found</h2>
+        <ul className="mt-3 divide-y divide-line rounded-card border border-line bg-surface">
           {results.concerns.map((c) => (
             <li key={c.id + c.zone}>
-              <button type="button" onClick={() => setActive(active === c.id ? null : c.id)} className="w-full text-left">
-                <Card padding="sm" className={active === c.id ? "ring-2 ring-accent" : ""}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Chip severity={c.severity} className="h-7 px-2.5 text-[12px]">
-                          {c.severity === "none" ? "Clear" : c.severity[0].toUpperCase() + c.severity.slice(1)}
-                        </Chip>
-                        <span className="truncate font-medium">{CONCERN_BY_ID[c.id]?.label ?? c.id}</span>
-                      </div>
-                      <p className="mt-1.5 text-[13px] leading-snug text-ink-muted">
-                        {ZONE_LABEL[c.zone]} · {c.reason}
-                      </p>
-                    </div>
-                    <span className="font-display font-display-numeral text-2xl text-ink-muted">{100 - c.score}</span>
+              <button
+                type="button"
+                onClick={() => setActive(active === c.id ? null : c.id)}
+                className={`flex w-full items-center justify-between gap-3 p-4 text-left ${active === c.id ? "bg-brand-soft/60" : ""}`}
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-[14px] font-medium">{CONCERN_BY_ID[c.id]?.label ?? c.id}</span>
+                    <Chip severity={c.severity}>{sevLabel(c.severity)}</Chip>
                   </div>
-                </Card>
+                  <p className="mt-1 text-[12px] leading-snug text-ink-muted">
+                    {ZONE_LABEL[c.zone]} · {c.reason}
+                  </p>
+                </div>
+                <span className="font-display font-display-numeral text-[20px] text-ink-muted">{100 - c.score}</span>
               </button>
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-xs leading-relaxed text-ink-muted">{results.disclaimer}</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">{results.disclaimer}</p>
       </section>
 
       {/* treatments */}
-      <section className="mt-8 px-5">
-        <h2 className="font-display text-2xl">Treatments matched to you</h2>
-        <p className="mt-1 text-sm text-ink-muted">From {clinic.name}&rsquo;s menu, with their prices.</p>
+      <section className="mt-6 px-4">
+        <h2 className="font-display text-[17px]">Treatments matched to you</h2>
+        <p className="mt-0.5 text-[12px] text-ink-muted">From {clinic.name}&rsquo;s menu, with their prices.</p>
         <ul className="mt-3 space-y-3">
           {recommended.map(({ treatment, why }) => (
             <li key={treatment.id}>
-              <Card>
-                <div className="flex items-start justify-between gap-3">
+              <Card padding="sm">
+                <Chip className="h-6 px-2 text-[10px] tracking-wide">TREATMENT</Chip>
+                <div className="mt-2 flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-display text-xl">{treatment.name}</h3>
-                    <p className="mt-1 text-[14px] leading-snug text-ink-muted">{treatment.description}</p>
+                    <h3 className="font-display text-[16px]">{treatment.name}</h3>
+                    <p className="mt-1 text-[13px] leading-snug text-ink-muted">{treatment.description}</p>
                   </div>
-                  <span className="font-display font-display-numeral shrink-0 text-2xl">{price(treatment)}</span>
                 </div>
-                <p className="mt-3 rounded-field bg-ivory-deep/70 p-3 text-[14px] leading-snug">
+                <p className="mt-2 text-[12px] text-ink-muted">
+                  {treatment.result_days && <>Lasts ~{treatment.result_days >= 60 ? `${Math.round(treatment.result_days / 30)} mo` : `${treatment.result_days} days`} · </>}
+                  <span className="text-ink">{price(treatment)}</span>
+                </p>
+                <p className="mt-3 rounded-field bg-brand-soft p-3 text-[13px] leading-snug text-brand-ink">
                   <span className="font-medium">Why this is relevant to you.</span> {why}
                 </p>
                 <div className="mt-3 flex gap-2">
                   <Button size="sm" onClick={() => preview(treatment)}>
                     Preview on my face
                   </Button>
-                  {treatment.result_days && (
-                    <Chip tone="outline" className="h-9">
-                      Lasts ~{treatment.result_days >= 60 ? `${Math.round(treatment.result_days / 30)} mo` : `${treatment.result_days} days`}
-                    </Chip>
-                  )}
+                  <Button size="sm" variant="secondary" onClick={() => onEvent?.("book_clicked", { from: "card", treatment: treatment.name })}>
+                    Book
+                  </Button>
                 </div>
               </Card>
             </li>
@@ -173,7 +171,7 @@ export function ResultsScreen({
       </section>
 
       {/* sticky book bar (Phase 3 wires the booking flow) */}
-      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-phone border-t border-line bg-ivory/90 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-phone border-t border-line bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
         <Button full size="lg" onClick={() => onEvent?.("book_clicked", { from: "results" })}>
           {recommended[0] ? `Book ${recommended[0].treatment.name}` : "Book a consultation"}
         </Button>
@@ -183,15 +181,15 @@ export function ResultsScreen({
       <BottomSheet open={sim !== null} onClose={() => setSim(null)} title={sim?.treatment.name} className="max-h-[92dvh] overflow-y-auto">
         {sim?.loading && (
           <div className="py-10 text-center">
-            <div className="mx-auto size-10 animate-spin rounded-full border-2 border-line border-t-accent" />
-            <p className="mt-4 text-[15px]">Rendering your after…</p>
-            <p className="mt-1 text-sm text-ink-muted">Only the treated zone changes. Everything else stays you.</p>
+            <div className="mx-auto size-10 animate-spin rounded-full border-2 border-line border-t-ink" />
+            <p className="mt-4 text-[14px] font-medium">Rendering your after</p>
+            <p className="mt-1 text-[13px] text-ink-muted">Only the treated zone changes. Everything else stays you.</p>
           </div>
         )}
         {sim?.error && (
           <div className="py-6">
-            <p className="text-[15px]">The preview didn&rsquo;t render.</p>
-            <p className="mt-1 text-sm text-ink-muted">{sim.error}</p>
+            <p className="text-[14px] font-medium">The preview didn&rsquo;t render.</p>
+            <p className="mt-1 text-[13px] text-ink-muted">{sim.error}</p>
             <Button className="mt-4" variant="secondary" onClick={() => preview(sim.treatment)}>
               Try again
             </Button>
@@ -207,7 +205,7 @@ export function ResultsScreen({
               onDoseChange={(d) => onEvent?.("dose_changed", { treatment: sim.treatment.name, dose: d })}
             />
             <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm text-ink-muted">{price(sim.treatment)} at {clinic.name}</span>
+              <span className="text-[13px] text-ink-muted">{price(sim.treatment)} at {clinic.name}</span>
               <Button size="sm" onClick={() => onEvent?.("book_clicked", { from: "sim", treatment: sim.treatment.name })}>
                 Book this
               </Button>
