@@ -153,6 +153,29 @@ input[type="range"] {
   accent-color: var(--brand);
 }
 
+/* Patient app type: Hanken Grotesk everywhere inside the patient shell (incl. sheets and tab bar). */
+.patient-font {
+  font-family: var(--font-hanken), var(--font-inter), system-ui, sans-serif;
+  letter-spacing: -0.005em;
+}
+.patient-font .font-display {
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+/* Dark brushed-metal promo cards (member promo, shop banner), as in the reference screenshots. */
+.metal-card {
+  background: linear-gradient(118deg, #0d0e11 0%, #1c1d22 34%, #6e7076 50%, #1c1d22 64%, #0b0c0e 100%);
+}
+/* Bronze points card on Rewards. */
+.bronze-card {
+  background:
+    linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.22) 46%, transparent 60%),
+    linear-gradient(135deg, #b4a594 0%, #cdc0b2 38%, #a69584 70%, #8d7c6c 100%);
+}
+.font-hand {
+  font-family: var(--font-caveat), "Segoe Script", cursive;
+}
+
 /* Patient app screens scroll like a native app: no desktop scrollbar (also inside the preview phone frame). */
 html:has(.patient-app) {
   scrollbar-width: none;

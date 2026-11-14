@@ -31,7 +31,7 @@ export function PatientShell({
   const base = `/s/${clinic.slug}`;
   const openRequests = patient?.requests.filter((r) => r.status === "requested").length ?? 0;
   return (
-    <ClinicTheme clinic={clinic}>
+    <ClinicTheme clinic={clinic} className="patient-font">
       <PatientProvider
         clinicSlug={clinic.slug}
         clinicName={clinic.name}
@@ -62,7 +62,7 @@ export function PatientShell({
           {!back && <AppBar
             title={title ?? clinic.name}
             logoUrl={title ? null : clinic.logo_url}
-            className={title ? "[&_span.font-display]:text-[20px]" : undefined}
+            className={title ? "[&_span.font-display]:text-[22px] [&_span.font-display]:font-medium" : undefined}
             right={
               <>
                 {clinic.is_sample && <Chip className="mr-1 h-6 text-[11px]">Sample clinic</Chip>}
@@ -100,7 +100,7 @@ export function TopTabs({ tabs, active }: { tabs: Array<{ key: string; label: st
             href={t.href}
             scroll={false}
             aria-current={on ? "page" : undefined}
-            className={on ? "border-b-2 border-ink py-3 text-center text-[13px] font-medium text-ink" : "border-b-2 border-transparent py-3 text-center text-[13px] text-ink-muted hover:text-ink"}
+            className={on ? "border-b-[3px] border-[#111318] pb-3 pt-2.5 text-center text-[15px] font-medium text-[#111318]" : "border-b-[3px] border-transparent pb-3 pt-2.5 text-center text-[15px] text-[#7a7d86] hover:text-ink"}
           >
             {t.label}
           </Link>

@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Button, Chip } from "@/components/ui";
-import { PatientShell, SectionTitle } from "@/components/patient/patient-shell";
+import { PatientShell } from "@/components/patient/patient-shell";
 import { JoinTrigger } from "@/components/patient/patient-provider";
 import { GiftCard } from "@/components/patient/gift-card";
+import { ScanCard } from "@/components/patient/scan-card";
 import { ItemArt } from "@/components/patient/item-art";
 import { CATEGORY_LABEL, Icon } from "@/components/patient/icons";
 import { treatmentIcon } from "@/components/patient/sheet-items";
@@ -12,9 +12,8 @@ import { getPlans, getRewards } from "@/lib/data/catalog";
 import { loadPatientPage } from "@/lib/patient/load";
 import { money } from "@/lib/money";
 
-// Patient home. Section order and shapes follow the team's disclosed reference recordings
-// (hero + points pill, welcome gift, popular grid, member promo, rewards row, next visit,
-// skin analysis, treatment explainers, about + map). Copy and code are Facet's own.
+// Patient home, matched section by section to the team's reference screenshots (sizes, spacing,
+// radii, order). Words are Facet's own; no financing banner (Facet has no financing partner).
 export default function ClinicHome({ params }: PageProps<"/s/[clinic]">) {
   return (
     <Suspense fallback={<div className="min-h-dvh bg-white" />}>
@@ -30,64 +29,56 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
   const popular = treatments.filter((t) => t.popular);
   const grid = (popular.length >= 2 ? popular : treatments).slice(0, 4);
   const explainers = treatments.filter((t) => !grid.includes(t)).slice(0, 6);
-  const welcome = clinic.welcome_points ?? 100;
-  const short = clinic.name.split(/\s+[|\-–—·]\s+|\s+l\s+/)[0];
   const gift = clinic.first_visit_credit_cents ?? 0;
   const claimBy = claimByLabel();
   const tel = clinic.phone?.replace(/[^\d+]/g, "");
   const bookHref = clinic.booking_url ?? (tel ? `tel:${tel}` : `${base}/shop?tab=treatments`);
+  const visitPts = clinic.visit_points ?? 50;
 
   return (
     <PatientShell clinic={clinic} patient={patient} active="home">
       {/* hero + points pill */}
       <section className="relative">
-        <div className="relative aspect-[16/11] overflow-hidden bg-brand-deep">
+        <div className="relative aspect-[4/3] overflow-hidden bg-brand-deep">
           {clinic.hero_photo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={clinic.hero_photo_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
-            <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(110%_80%_at_85%_10%,rgba(255,255,255,.22),transparent_55%),radial-gradient(90%_70%_at_0%_100%,rgba(0,0,0,.35),transparent_60%),linear-gradient(160deg,var(--brand)_0%,var(--brand-deep)_100%)]">
-              <span className="absolute -right-6 bottom-6 select-none text-[150px] font-semibold leading-none tracking-[-0.06em] text-white/[.07]">
-                {short.split(/\s+/).map((w) => w[0]).join("").slice(0, 2)}
-              </span>
-            </div>
+            <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(110%_80%_at_85%_10%,rgba(255,255,255,.18),transparent_55%),linear-gradient(160deg,var(--brand)_0%,var(--brand-deep)_100%)]" />
           )}
-          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-2/3 bg-gradient-to-b from-black/50 to-transparent" />
-          <div className="absolute left-4 right-4 top-4 text-white">
-            <h1 className="font-display text-[22px] drop-shadow-sm">{patient?.first_name ? `Welcome back, ${patient.first_name}!` : `Welcome to ${clinic.name}`}</h1>
-            <p className="mt-0.5 text-[12px] text-white/80">{clinic.name}</p>
+          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-3/5 bg-gradient-to-b from-black/45 to-transparent" />
+          <div className="absolute left-5 right-5 top-5 text-white">
+            <h1 className="text-[22px] font-bold leading-[1.2] tracking-[-0.015em] drop-shadow-sm">{patient?.first_name ? `Welcome back, ${patient.first_name}!` : `Welcome to ${clinic.name}`}</h1>
+            <p className="mt-1 text-[14px] text-white/75">{clinic.name}</p>
           </div>
         </div>
-
-        <div className="relative z-10 -mt-6 px-3">
+        <div className="relative z-10 -mt-[26px] px-4">
           {patient ? (
-            <Link href={`${base}/rewards`} className="flex h-12 items-center gap-2 rounded-card bg-surface px-4 shadow-lift">
-              <span className="font-display-numeral text-[16px]">{patient.points.toLocaleString()}</span>
-              <span className="truncate text-[12px] text-ink-muted">{clinic.name} points</span>
-              <Chip className="ml-auto h-6 shrink-0 text-[11px]" tone={patient.plan ? "brand" : "muted"}>
-                {patient.plan ? `${patient.plan.name}` : "Not a member"}
-              </Chip>
-              <Icon name="chevron" className="size-4 shrink-0 text-ink-muted" />
+            <Link href={`${base}/rewards`} className="flex h-[52px] items-center gap-2.5 rounded-[18px] bg-white px-4 shadow-[0_10px_28px_-10px_rgba(17,19,24,.28)]">
+              <span className="text-[17px] font-semibold tabular-nums">{patient.points.toLocaleString()}</span>
+              <span className="min-w-0 flex-1 truncate text-[14px] text-[#6f7380]">{clinic.name} points</span>
+              <span className={`shrink-0 rounded-full px-3 py-1 text-[13px] ${patient.plan ? "bg-brand-soft text-brand-ink" : "bg-[#ececee] text-[#2a2d34]"}`}>{patient.plan ? patient.plan.name : "Not a member"}</span>
+              <Icon name="chevron" className="size-4 shrink-0" strokeWidth={2} />
             </Link>
           ) : (
-            <JoinTrigger className="flex h-12 w-full items-center gap-2 rounded-card bg-surface px-4 text-left shadow-lift">
-              <span className="font-display-numeral text-[16px]">0</span>
-              <span className="truncate text-[12px] text-ink-muted">{clinic.name} points</span>
-              <Chip className="ml-auto h-6 shrink-0 text-[11px]">Not a member</Chip>
-              <Icon name="chevron" className="size-4 shrink-0 text-ink-muted" />
+            <JoinTrigger className="flex h-[52px] w-full items-center gap-2.5 rounded-[18px] bg-white px-4 text-left shadow-[0_10px_28px_-10px_rgba(17,19,24,.28)]">
+              <span className="text-[17px] font-semibold tabular-nums">0</span>
+              <span className="min-w-0 flex-1 truncate text-[14px] text-[#6f7380]">{clinic.name} points</span>
+              <span className="shrink-0 rounded-full bg-[#ececee] px-3 py-1 text-[13px] text-[#2a2d34]">Not a member</span>
+              <Icon name="chevron" className="size-4 shrink-0" strokeWidth={2} />
             </JoinTrigger>
           )}
         </div>
       </section>
 
-      {/* welcome gift */}
+      {/* a gift for you */}
       {gift > 0 && !patient && (
-        <section className="px-3 pt-7">
-          <div className="flex items-baseline justify-between px-1">
-            <h2 className="font-display text-[19px]">A gift for you</h2>
-            <span className="text-[12px] text-ink-muted">Claim by {claimBy}</span>
+        <section className="px-4 pt-8">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-[21px] font-semibold tracking-[-0.015em]">A gift for you</h2>
+            <span className="text-[14px] text-[#7a7d86]">Claim by {claimBy}</span>
           </div>
-          <div className="mt-3">
+          <div className="mt-3.5">
             <GiftCard amountLabel={`${money(gift)} off your first purchase`} claimBy={claimBy} signedIn={Boolean(patient)} />
           </div>
         </section>
@@ -95,60 +86,66 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
 
       {/* popular right now */}
       {grid.length > 0 && (
-        <section className="px-3 pt-8">
-          <SectionTitle center>Popular right now</SectionTitle>
-          <div className="mt-4 grid grid-cols-2 gap-x-2.5 gap-y-4">
+        <section className="px-4 pt-9">
+          <h2 className="text-center text-[20px] font-semibold tracking-[-0.015em]">Popular right now</h2>
+          <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5">
             {grid.map((t) => (
               <Link key={t.id} href={`${base}/t/${t.id}`} className="block">
-                <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/5]" />
-                <p className="mt-2 truncate px-0.5 text-[13px]">{t.name}</p>
-                <p className="px-0.5 text-[12px] font-medium">{t.price_cents != null ? money(t.price_cents, { from: true }) : "Price on consultation"}</p>
+                <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/5] rounded-[10px]" />
+                <p className="mt-2.5 truncate text-[14px]">{t.name}</p>
+                <p className="mt-0.5 text-[14px] font-medium">{t.price_cents != null ? money(t.price_cents, { from: true }) : "Price on consultation"}</p>
               </Link>
             ))}
           </div>
         </section>
       )}
 
+      {/* points row (same shape as the reference's pay-over-time row) */}
+      <section className="px-4 pt-6">
+        <Link href={`${base}/rewards`} className="flex items-center gap-3.5 rounded-[16px] bg-[#f3f4f6] px-4 py-4">
+          <span className="shrink-0 rounded-[8px] bg-brand-soft px-3 py-1.5 text-[13px] font-bold text-brand-ink">Points</span>
+          <span className="min-w-0">
+            <span className="block text-[15px] font-semibold leading-snug">Earn {visitPts} points every visit.</span>
+            <span className="block text-[13px] text-[#7a7d86]">Show your code at check-in, spend them on rewards.</span>
+          </span>
+        </Link>
+      </section>
+
       {/* member promo */}
       {plans.length > 0 && (
-        <section className="px-3 pt-7">
-          <div className="relative overflow-hidden rounded-card bg-ink px-6 py-6 text-center text-white">
-            <span aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(60%_120%_at_50%_120%,rgba(255,255,255,.22),transparent_70%)]" />
-            <div className="relative">
-              <p className="font-display text-[19px] leading-tight">Save more as a {short} member</p>
-              <p className="mt-1.5 text-[12px] text-white/75">Treatments every month. Member pricing. Members-only perks.</p>
-              <Link href={plans.length === 1 ? `${base}/m/${plans[0].id}` : `${base}/shop?tab=memberships`} className="mt-4 inline-flex h-9 items-center rounded-chip bg-white px-4 text-[13px] font-medium text-ink">
-                See benefits
-              </Link>
-            </div>
+        <section className="px-4 pt-4">
+          <div className="metal-card relative overflow-hidden rounded-[16px] px-6 py-7 text-center text-white">
+            <p className="relative text-[19px] font-semibold leading-[1.3] tracking-[-0.01em]">Save more as a {clinic.name} member</p>
+            <p className="relative mt-2 text-[13.5px] leading-snug text-white/70">Treatments every month. Member pricing. Members-only perks.</p>
+            <Link href={plans.length === 1 ? `${base}/m/${plans[0].id}` : `${base}/shop?tab=memberships`} className="relative mt-5 inline-flex h-11 items-center rounded-[12px] bg-white px-6 text-[15px] font-medium text-[#111318]">
+              See benefits
+            </Link>
           </div>
         </section>
       )}
 
       {/* rewards row */}
       {rewards.length > 0 && (
-        <section className="pt-8">
-          <div className="px-4">
-            <SectionTitle action={<Link href={`${base}/rewards`} className="flex items-center gap-0.5 text-[12px] text-ink-muted hover:text-ink">See more <Icon name="chevron" className="size-3.5" /></Link>}>Rewards</SectionTitle>
+        <section className="pt-9">
+          <div className="flex items-baseline justify-between px-4">
+            <h2 className="text-[20px] font-semibold tracking-[-0.015em]">Rewards</h2>
+            <Link href={`${base}/rewards`} className="flex items-center gap-1 text-[14px] font-medium">
+              See more <Icon name="chevron" className="size-3.5" strokeWidth={2} />
+            </Link>
           </div>
-          <ul className="mt-3 flex gap-2.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none]">
+          <ul className="mt-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
             {rewards.map((r) => {
-              const unlocked = (patient?.points ?? 0) >= r.points_cost && Boolean(patient);
+              const unlocked = Boolean(patient) && (patient?.points ?? 0) >= r.points_cost;
               return (
-                <li key={r.id} className="w-[44%] shrink-0">
-                  <Link href={`${base}/rewards`} className="block overflow-hidden rounded-card border border-line bg-surface-muted">
-                    {r.image_url || clinic.logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.image_url ?? clinic.logo_url!} alt="" className={`aspect-[4/3] w-full bg-white ${r.image_url ? "object-cover" : "object-contain p-5"} ${unlocked ? "" : "grayscale"}`} />
-                    ) : (
-                      <ItemArt icon="gift" alt="" className="aspect-[4/3] rounded-none" tone={unlocked ? "brand" : "muted"} />
-                    )}
-                    <div className="flex flex-col items-center px-2 py-2.5 text-center">
-                      <Chip tone={unlocked ? "brand" : "outline"} className="h-5 gap-1 px-2 text-[9px] font-semibold tracking-[0.06em]">
-                        {!unlocked && <Icon name="lock" className="size-2.5" strokeWidth={2} />}
+                <li key={r.id} className="w-[42%] shrink-0">
+                  <Link href={`${base}/rewards`} className="block overflow-hidden rounded-[14px] bg-[#f1f1f2]">
+                    <RewardArt image={r.image_url} logo={clinic.logo_url} unlocked={unlocked} />
+                    <div className="flex flex-col items-center px-2 pb-4 pt-3 text-center">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#e4e4e7] px-2.5 py-1 text-[11px] font-bold tracking-[0.03em] text-[#3a3d45]">
+                        {!unlocked && <Icon name="lock" className="size-3" strokeWidth={2.2} />}
                         {r.points_cost.toLocaleString()} POINTS
-                      </Chip>
-                      <p className="mt-1.5 line-clamp-2 text-[12px] leading-snug">{r.name}</p>
+                      </span>
+                      <p className="mt-2 line-clamp-2 text-[14px] leading-snug">{r.name}</p>
                     </div>
                   </Link>
                 </li>
@@ -159,56 +156,42 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
       )}
 
       {/* book next visit */}
-      <section className="px-3 pt-6">
-        <a href={bookHref} className="flex items-center gap-3 rounded-card bg-surface-muted p-3.5 hover:bg-line">
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-white">
+      <section className="px-4 pt-7">
+        <a href={bookHref} className="flex items-center gap-3.5 rounded-[16px] bg-[#f3f4f6] px-4 py-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#111318] text-white">
             <Icon name="calendar" className="size-[18px]" />
           </span>
-          <span>
-            <span className="block text-[14px] font-medium">Book your next visit</span>
-            <span className="block text-[12px] text-ink-muted">Online, by text, or give us a call</span>
+          <span className="min-w-0">
+            <span className="block text-[16px] font-medium">Book your next visit</span>
+            <span className="block text-[14px] text-[#7a7d86]">Online, by text, or give us a call</span>
           </span>
-          <Icon name="chevron" className="ml-auto size-4 text-ink-muted" />
+          <Icon name="chevron" className="ml-auto size-4 shrink-0 text-[#9a9ca3]" />
         </a>
       </section>
 
-      {/* AI skin analysis */}
-      <section className="px-3 pt-8">
-        <div className="px-1">
-          <SectionTitle>Know your skin</SectionTitle>
-          <p className="mt-1 text-[12px] text-ink-muted">See what your skin needs, then how each treatment works.</p>
-        </div>
-        <div className="mt-3 overflow-hidden rounded-card bg-ink text-white shadow-soft">
-          <div className="relative aspect-[16/11] bg-[radial-gradient(120%_90%_at_20%_0%,rgba(255,255,255,.14),transparent_55%),linear-gradient(180deg,#1a1c22_0%,#101216_100%)]">
-            <MeshMark />
-            <span className="absolute left-3 top-3 rounded-chip bg-white/95 px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] text-ink">BEFORE</span>
-            <span className="absolute left-4 top-[38%] rounded-chip bg-white/95 px-2.5 py-1 text-[11px] font-medium text-ink"><span className="mr-1.5 inline-block size-1.5 rounded-full bg-brand align-middle" />Under-eye</span>
-            <span className="absolute right-4 top-[56%] rounded-chip bg-white/95 px-2.5 py-1 text-[11px] font-medium text-ink"><span className="mr-1.5 inline-block size-1.5 rounded-full bg-brand align-middle" />Sun spots</span>
-            <span className="absolute bottom-4 left-10 rounded-chip bg-white/95 px-2.5 py-1 text-[11px] font-medium text-ink"><span className="mr-1.5 inline-block size-1.5 rounded-full bg-brand align-middle" />Fine lines</span>
-          </div>
-          <div className="bg-[linear-gradient(180deg,var(--brand)_0%,var(--brand-deep)_100%)] px-5 pb-5 pt-4">
-            <p className="text-[10px] font-semibold tracking-[0.12em] text-white/80">FREE SKIN ANALYSIS</p>
-            <h3 className="font-display mt-1 text-[19px] text-white">What is your skin asking for?</h3>
-            <p className="mt-1.5 text-[12px] leading-snug text-white/85">One selfie: your skin score, what to treat first, and a preview of your results with {short}.</p>
-            <Button href={`${base}/scan`} variant="white" size="sm" className="mt-4">
-              Start the 1-minute scan
-            </Button>
-          </div>
+      {/* educate yourself + skin analysis */}
+      <section className="px-4 pt-9">
+        <h2 className="text-[20px] font-semibold tracking-[-0.015em]">Educate yourself</h2>
+        <p className="mt-1 text-[14px] leading-snug text-[#7a7d86]">Know what your skin needs, then how each treatment works.</p>
+        <div className="mt-4">
+          <ScanCard href={`${base}/scan`} clinicName={clinic.name} />
         </div>
       </section>
 
       {/* treatment explainers */}
       {explainers.length > 0 && (
-        <section className="pt-6">
-          <ul className="flex gap-2.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none]">
+        <section className="pt-4">
+          <ul className="flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
             {explainers.map((t) => (
               <li key={t.id} className="w-[46%] shrink-0">
-                <Link href={`${base}/t/${t.id}`} className="block">
-                  <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/3.2]" />
-                  {t.category && <Chip className="mt-2 h-5 px-2 text-[9px] font-semibold tracking-[0.08em]">{CATEGORY_LABEL[t.category].toUpperCase()}</Chip>}
-                  <p className="mt-1 truncate text-[13px] font-medium">{t.name}</p>
-                  {t.description && <p className="line-clamp-2 text-[11px] leading-snug text-ink-muted">{t.description}</p>}
-                  <p className="mt-1 flex items-center gap-0.5 text-[11px] font-medium">How it works <Icon name="chevron" className="size-3" /></p>
+                <Link href={`${base}/t/${t.id}`} className="block overflow-hidden rounded-[14px] border border-[#ececef] bg-white">
+                  <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/3] rounded-none" />
+                  <div className="p-3">
+                    {t.category && <span className="inline-block rounded-full bg-[#ececee] px-2 py-0.5 text-[10px] font-bold tracking-[0.06em] text-[#5a5d66]">{CATEGORY_LABEL[t.category].toUpperCase()}</span>}
+                    <p className="mt-1.5 truncate text-[14px] font-medium">{t.name}</p>
+                    {t.description && <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-[#7a7d86]">{t.description}</p>}
+                    <p className="mt-1.5 flex items-center gap-0.5 text-[12px] font-medium">How it works <Icon name="chevron" className="size-3" strokeWidth={2} /></p>
+                  </div>
                 </Link>
               </li>
             ))}
@@ -216,75 +199,81 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
         </section>
       )}
 
-      {/* about + map */}
-      <section className="px-3 pt-8">
-        {(clinic.logo_url || clinic.hero_photo_url) && (
-          <div className="grid aspect-[16/9] place-items-center overflow-hidden rounded-card bg-brand">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={clinic.logo_url ?? clinic.hero_photo_url!} alt={clinic.name} className={clinic.logo_url ? "max-h-[55%] max-w-[70%] object-contain brightness-0 invert" : "h-full w-full object-cover"} />
+      {/* about + map + call */}
+      <section className="px-4 pt-9">
+        {(clinic.hero_photo_url || clinic.logo_url) && (
+          <div className="relative aspect-[16/8] overflow-hidden rounded-[16px] bg-brand">
+            {clinic.hero_photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={clinic.hero_photo_url} alt={clinic.name} className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={clinic.logo_url!} alt={clinic.name} className="absolute inset-0 m-auto max-h-[55%] max-w-[70%] object-contain brightness-0 invert" />
+            )}
           </div>
         )}
-        <h2 className="font-display mt-4 px-1 text-[17px]">About us</h2>
-        <p className="mt-1.5 px-1 text-[13px] leading-relaxed text-ink-muted">
+        <h2 className="mt-5 text-[18px] font-semibold tracking-[-0.01em]">About us</h2>
+        <p className="mt-1.5 text-[15px] leading-[1.65] text-[#6f7380]">
           {clinic.about ?? `${clinic.name} offers ${treatments.length ? treatments.slice(0, 3).map((t) => t.name.toLowerCase()).join(", ") : "aesthetic treatments"} and more.`}
         </p>
         {clinic.address && (
-          <div className="mt-4 overflow-hidden rounded-card border border-line">
-            <iframe
-              title={`Map to ${clinic.name}`}
-              src={`https://www.google.com/maps?q=${encodeURIComponent(`${clinic.name}, ${clinic.address}`)}&output=embed`}
-              className="block aspect-[16/10] w-full border-0 grayscale"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-            <div className="bg-surface p-3">
-              <p className="text-[13px] font-medium">{clinic.name}</p>
-              <p className="mt-0.5 flex items-start gap-1.5 text-[12px] text-ink-muted">
-                <svg viewBox="0 0 16 16" className="mt-0.5 size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="M8 14s5-4.3 5-8A5 5 0 0 0 3 6c0 3.7 5 8 5 8Z" /><circle cx="8" cy="6" r="1.8" /></svg>
+          <div className="mt-5 overflow-hidden rounded-[16px] bg-[#f3f4f6]">
+            <div className="relative">
+              <iframe
+                title={`Map to ${clinic.name}`}
+                src={`https://www.google.com/maps?q=${encodeURIComponent(clinic.address)}&z=15&output=embed`}
+                className="block aspect-[16/10] w-full border-0 [filter:grayscale(1)_invert(.92)_contrast(.9)]"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+            <div className="px-4 py-4">
+              <p className="text-[16px] font-semibold">{clinic.name}</p>
+              <p className="mt-1 flex items-start gap-1.5 text-[14px] leading-snug text-[#6f7380]">
+                <svg viewBox="0 0 16 16" className="mt-0.5 size-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="M8 14s5-4.3 5-8A5 5 0 0 0 3 6c0 3.7 5 8 5 8Z" /><circle cx="8" cy="6" r="1.8" /></svg>
                 {clinic.address}
               </p>
             </div>
           </div>
         )}
+        {tel && (
+          <a href={`tel:${tel}`} className="mt-4 flex h-[52px] items-center justify-center rounded-[14px] bg-black text-[16px] font-semibold text-white">
+            Call now
+          </a>
+        )}
       </section>
 
-      <p className="px-6 pt-8 text-center text-[11px] leading-relaxed text-ink-muted">
+      <p className="px-6 pt-8 text-center text-[11px] leading-relaxed text-[#9a9ca3]">
         {clinic.is_sample && <>Sample clinic for demos. Prices are typical, not a real offer. </>}
-        {!patient && welcome > 0 && <>Join to earn {welcome} welcome points. </>}
-        Skin scan results are cosmetic estimates, not a medical diagnosis. 18+.{" "}
+        Skin analysis results are cosmetic estimates, not a medical diagnosis. 18+.{" "}
         <Link href={`${base}/legal`} className="underline underline-offset-2">
           Privacy and terms
         </Link>
       </p>
+
     </PatientShell>
+  );
+}
+
+/** Reward card art: the reward's photo, else the clinic logo on a soft gray field (as in the reference). */
+function RewardArt({ image, logo, unlocked }: { image: string | null; logo: string | null; unlocked: boolean }) {
+  if (image) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={image} alt="" className={`aspect-[5/4] w-full object-cover ${unlocked ? "" : "grayscale"}`} />;
+  }
+  return (
+    <div className="relative grid aspect-[5/4] w-full place-items-center overflow-hidden bg-[radial-gradient(120%_90%_at_30%_20%,#b4b5b9,#8c8d92)]">
+      {logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logo} alt="" className="max-h-[60%] max-w-[78%] object-contain opacity-90 brightness-0 invert" />
+      ) : (
+        <Icon name="gift" className="size-9 text-white/90" strokeWidth={1.3} />
+      )}
+    </div>
   );
 }
 
 /** Welcome gifts are good for a week from when the patient first sees them. */
 function claimByLabel() {
   return new Date(Date.now() + 7 * 864e5).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Los_Angeles" });
-}
-
-/** Abstract face-mesh mark for the scan card when there's no consented photo. */
-function MeshMark() {
-  const pts: Array<[number, number]> = [];
-  const cx = 50,
-    cy = 50;
-  for (let r = 10; r <= 40; r += 10) {
-    const n = r * 0.6;
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      pts.push([cx + Math.cos(a) * r * 0.78, cy + Math.sin(a) * r]);
-    }
-  }
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" className="absolute inset-0 h-full w-full opacity-70" aria-hidden="true">
-      {pts.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={0.55} fill="white" opacity={0.6} />
-      ))}
-      {[10, 20, 30, 40].map((r) => (
-        <ellipse key={r} cx={cx} cy={cy} rx={r * 0.78} ry={r} fill="none" stroke="white" strokeOpacity={0.18} strokeWidth={0.3} />
-      ))}
-    </svg>
-  );
 }

@@ -19,11 +19,11 @@ export function AppBar({
   className?: string;
 }) {
   return (
-    <header className={cn("flex h-14 items-center justify-between px-4 pt-[env(safe-area-inset-top)]", className)}>
+    <header className={cn("flex h-[60px] items-center justify-between px-4 pt-[env(safe-area-inset-top)]", className)}>
       <div className="flex min-w-0 items-center gap-2">
         {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoUrl} alt={title} className="h-7 max-w-[140px] object-contain" />
+          <img src={logoUrl} alt={title} className="h-10 max-w-[150px] object-contain object-left" />
         ) : (
           <span className="font-display truncate text-[17px]">{title}</span>
         )}
@@ -51,7 +51,7 @@ const ICONS: Record<TabKey, React.ReactNode> = {
       <path d="M16 4h3a1 1 0 0 1 1 1v3" />
       <path d="M20 16v3a1 1 0 0 1-1 1h-3" />
       <path d="M8 20H5a1 1 0 0 1-1-1v-3" />
-      <path d="M7 12h10" />
+      <path d="M7 12h10" strokeDasharray="2 2" />
     </>
   ),
   rewards: (
@@ -113,10 +113,10 @@ export function TabBar({
                 <Link
                   href={t.href}
                   aria-current={on ? "page" : undefined}
-                  className={cn("flex w-14 flex-col items-center gap-0.5 rounded-field py-1", on ? "text-ink" : "text-ink-muted/70 hover:text-ink")}
+                  className={cn("flex w-14 flex-col items-center gap-1 rounded-field py-1", on ? "text-ink" : "text-[#9a9ca3] hover:text-ink")}
                 >
                   {icon}
-                  <span className={cn("text-[10px] leading-none", on && "font-medium")}>{t.label}</span>
+                  <span className={cn("text-[11px] leading-none", on && "font-semibold")}>{t.label}</span>
                 </Link>
               ) : (
                 <span aria-label={`${t.label} (coming soon)`} className="flex w-14 flex-col items-center gap-0.5 py-1 text-ink-muted/35">

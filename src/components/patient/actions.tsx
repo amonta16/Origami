@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { BottomSheet, Button, Toggle } from "@/components/ui";
 import { usePatient } from "./patient-provider";
-import { Icon } from "./icons";
 
 /** Redeem a reward (signed in, enough points) or say what's missing. */
 export function RedeemButton({ rewardId, rewardName, cost, points }: { rewardId: string; rewardName: string; cost: number; points: number | null }) {
@@ -23,15 +22,15 @@ export function RedeemButton({ rewardId, rewardName, cost, points }: { rewardId:
 
   if (!signedIn) {
     return (
-      <button type="button" onClick={() => openJoin("Join to start earning points toward rewards.")} className="h-10 w-full text-[13px] text-ink-muted hover:text-ink">
-        Join to unlock
+      <button type="button" onClick={() => openJoin("Join to start earning points toward rewards.")} className="h-11 w-full text-[14px] text-[#7a7d86] hover:text-ink">
+        Locked
       </button>
     );
   }
   if ((points ?? 0) < cost) {
     return (
-      <span className="flex h-10 items-center justify-center gap-1.5 text-[13px] text-ink-muted">
-        <Icon name="lock" className="size-3.5" /> {cost - (points ?? 0)} more points
+      <span title={`${cost - (points ?? 0)} more points to unlock`} className="flex h-11 items-center justify-center text-[14px] text-[#7a7d86]">
+        Locked
       </span>
     );
   }
@@ -101,9 +100,16 @@ export function RequestButton({ kind, itemId, label, sentNote }: { kind: "treatm
   }
   return (
     <div>
-      <Button full size="lg" loading={state === "busy"} onClick={send}>
+      <button
+        type="button"
+        onClick={send}
+        disabled={state === "busy"}
+        aria-busy={state === "busy" || undefined}
+        className="flex h-[56px] w-full items-center justify-center gap-2 rounded-[16px] bg-black text-[17px] font-semibold text-white transition-opacity active:opacity-85 disabled:opacity-60"
+      >
+        {state === "busy" && <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
         {label}
-      </Button>
+      </button>
       {error && <p role="alert" className="mt-2 text-center text-[12px] text-danger">{error}</p>}
     </div>
   );

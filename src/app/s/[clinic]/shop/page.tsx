@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Button, Chip } from "@/components/ui";
-import { PatientShell, SectionTitle, TopTabs } from "@/components/patient/patient-shell";
+import { Chip } from "@/components/ui";
+import { PatientShell, TopTabs } from "@/components/patient/patient-shell";
 import { ItemButton } from "@/components/patient/patient-provider";
 import { ItemArt } from "@/components/patient/item-art";
 import { CATEGORY_LABEL, Icon, type IconName } from "@/components/patient/icons";
@@ -77,8 +77,10 @@ function Browse({
   hasPlans: boolean;
   href: (q: Record<string, string | undefined>) => string;
 }) {
-  const cats = (["injectables", "skin", "laser", "body", "wellness", "consult"] as TreatmentCategory[]).filter((c) => treatments.some((t) => t.category === c));
-  const popular = treatments.filter((t) => t.popular).slice(0, 4);
+  // Categories in the order they first appear on the clinic's own menu (as in the reference).
+  const cats = [...new Set(treatments.map((t) => t.category).filter((c): c is TreatmentCategory => Boolean(c) && c !== "consult"))];
+  // Reference shows the whole menu as a photo grid under the categories, popular first.
+  const all = [...treatments].sort((a, b) => Number(Boolean(b.popular)) - Number(Boolean(a.popular)) || a.sort - b.sort);
   const rows: Array<{ kind: Product["kind"]; title: string; icon: IconName }> = [
     { kind: "package", title: "Packages", icon: "package" },
     { kind: "skincare", title: "Skincare", icon: "skincare" },
@@ -87,41 +89,49 @@ function Browse({
 
   return (
     <div className="pb-4">
-      {hasPlans && (
-        <section className="px-3 pt-3">
-          <div className="relative overflow-hidden rounded-card bg-ink px-6 py-6 text-center text-white">
-            <span aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(60%_120%_at_50%_120%,rgba(255,255,255,.28),transparent_70%),radial-gradient(40%_80%_at_100%_0%,color-mix(in_oklab,var(--brand)_55%,transparent),transparent_70%)]" />
-            <div className="relative">
-              <p className="font-display text-[20px] leading-tight">Members pay less, every visit.</p>
-              <p className="mt-1.5 text-[13px] text-white/75">Monthly plans with a treatment included and bonus points.</p>
-              <Button href={href({ tab: "memberships" })} variant="white" size="sm" className="mt-4">
-                See memberships
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
+      <section className="px-4 pt-4">
+        <div className="metal-card relative overflow-hidden rounded-[16px] px-6 py-7 text-center text-white">
+          <p className="text-[20px] font-semibold leading-[1.25] tracking-[-0.01em]">
+            {hasPlans ? (
+              <>
+                Members pay less.
+                <br />
+                Every visit earns points.
+              </>
+            ) : (
+              <>
+                Book today.
+                <br />
+                Earn points every visit.
+              </>
+            )}
+          </p>
+          <p className="mt-2 text-[14px] text-white/70">Member pricing, rewards and perks.</p>
+          <Link href={hasPlans ? href({ tab: "memberships" }) : `${base}/rewards`} className="mt-5 inline-flex h-11 items-center rounded-[10px] bg-white px-5 text-[15px] font-medium text-[#111318]">
+            How does it work?
+          </Link>
+        </div>
+      </section>
 
       {cats.length > 0 && (
-        <section className="grid grid-cols-3 gap-y-4 px-3 pt-6">
+        <section className="grid grid-cols-3 gap-y-6 px-4 pt-7">
           {cats.map((c) => (
-            <Link key={c} href={href({ tab: "treatments", cat: c })} className="flex flex-col items-center gap-1.5 rounded-field py-1 text-[12px] text-ink-soft hover:text-ink">
-              <Icon name={c as IconName} className="size-[26px] text-ink" strokeWidth={1.4} />
+            <Link key={c} href={href({ tab: "treatments", cat: c })} className="flex flex-col items-center gap-2 text-[14px] text-[#2a2d34] hover:text-ink">
+              <Icon name={c as IconName} className="size-[30px] text-[#111318]" strokeWidth={1.3} />
               {CATEGORY_LABEL[c]}
             </Link>
           ))}
         </section>
       )}
 
-      {popular.length > 0 && (
-        <section className="px-3 pt-7">
-          <SectionTitle action={<Link href={href({ tab: "treatments" })} className="text-[13px] text-ink-muted hover:text-ink">All treatments</Link>}>Most booked</SectionTitle>
-          <div className="mt-3 grid grid-cols-2 gap-x-2.5 gap-y-5">
-            {popular.map((t) => (
+      {all.length > 0 && (
+        <section className="px-4 pt-8">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6">
+            {all.map((t) => (
               <Link key={t.id} href={`${base}/t/${t.id}`} className="block">
-                <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/5]" />
-                <p className="mt-2 truncate px-0.5 text-[13px]">{t.name}</p>
-                <p className="px-0.5 text-[12px] font-medium">{t.price_cents != null ? money(t.price_cents, { from: true }) : "Price on consultation"}</p>
+                <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[1/1.08] rounded-[12px]" />
+                <p className="mt-2.5 truncate text-[15px]">{t.name}</p>
+                <p className="mt-0.5 text-[15px] font-medium">{t.price_cents != null ? money(t.price_cents, { from: true }) : "Price on consultation"}</p>
               </Link>
             ))}
           </div>
@@ -132,17 +142,17 @@ function Browse({
         const items = products.filter((p) => p.kind === row.kind);
         if (!items.length) return null;
         return (
-          <section key={row.kind} className="pt-8">
+          <section key={row.kind} className="pt-9">
             <div className="px-4">
-              <SectionTitle>{row.title}</SectionTitle>
+              <h2 className="text-[20px] font-semibold tracking-[-0.015em]">{row.title}</h2>
             </div>
-            <ul className="mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-px-3 px-3 pb-1 [scrollbar-width:none]">
+            <ul className="mt-3.5 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-1 [scrollbar-width:none]">
               {items.map((p) => (
                 <li key={p.id} className="w-[44%] shrink-0 snap-start">
                   <ItemButton item={productItem(p)}>
-                    <ItemArt src={p.image_url} icon={row.icon} alt={p.name} tone={row.kind === "gift_card" ? "brand" : "muted"} />
-                    <p className="mt-2 line-clamp-2 px-0.5 text-[13px] leading-snug">{p.name}</p>
-                    <p className="px-0.5 text-[13px] font-medium">{money(p.price_cents)}</p>
+                    <ItemArt src={p.image_url} icon={row.icon} alt={p.name} tone={row.kind === "gift_card" ? "brand" : "muted"} className="rounded-[12px]" />
+                    <p className="mt-2.5 line-clamp-2 text-[14px] leading-snug">{p.name}</p>
+                    <p className="mt-0.5 text-[14px] font-medium">{money(p.price_cents)}</p>
                   </ItemButton>
                 </li>
               ))}
@@ -181,22 +191,25 @@ function Memberships({
     return <p className="px-6 pt-16 text-center text-[14px] text-ink-muted">{clinicName} doesn&rsquo;t offer memberships yet.</p>;
   }
   return (
-    <div className="px-3 pt-4">
-      <ul className="grid grid-cols-2 gap-x-2.5 gap-y-5">
+    <div className="px-4 pt-5">
+      <ul className="grid grid-cols-2 gap-x-3 gap-y-6">
         {plans.map((m) => (
           <li key={m.id}>
             <Link href={`${base}/m/${m.id}`} className="block">
-              <div className="relative grid aspect-square place-items-center overflow-hidden rounded-card bg-ink">
+              <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[12px] bg-[#1b1c20]">
                 {photo && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55 grayscale" />
+                  <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70 grayscale" />
                 )}
-                <span aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_100%,rgba(255,255,255,.18),transparent_70%)]" />
-                <span className="relative px-3 text-center text-[13px] font-semibold uppercase leading-tight tracking-[0.12em] text-white">{m.name}</span>
+                <span aria-hidden="true" className="absolute inset-0 bg-black/25" />
+                <span className="relative px-3 text-center text-[14px] font-bold uppercase leading-[1.35] tracking-[0.16em] text-white">{m.name}</span>
                 {m.id === currentPlanId && <Chip tone="brand" className="absolute left-2 top-2 h-5 text-[10px]">Your plan</Chip>}
               </div>
-              <p className="mt-2 line-clamp-2 px-0.5 text-[13px] leading-snug">{m.name}</p>
-              <p className="px-0.5 text-[12px] font-medium">{money(m.monthly_price_cents)}/month</p>
+              <p className="mt-2.5 line-clamp-2 text-[15px] leading-snug">{m.name}</p>
+              <p className="mt-0.5 text-[15px] font-medium">
+                {money(m.monthly_price_cents)}
+                <span className="font-normal text-[#7a7d86]">/month</span>
+              </p>
             </Link>
           </li>
         ))}

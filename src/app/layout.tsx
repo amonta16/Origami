@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Caveat, Fraunces, Hanken_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -12,6 +12,21 @@ const fraunces = Fraunces({
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
+});
+
+// Patient app face, matched to the reference screenshots' rounded grotesk.
+const hanken = Hanken_Grotesk({
+  variable: "--font-hanken",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+// Handwritten tag on the welcome gift.
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin"],
+  weight: ["600"],
   display: "swap",
 });
 
@@ -35,7 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${inter.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${inter.variable} ${hanken.variable} ${caveat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { AppBar, Button, Chip } from "@/components/ui";
 import { preloadLandmarker } from "@/lib/face/landmarker";
+import { MeshPhoto } from "@/components/patient/scan-card";
 import type { Clinic } from "@/lib/types";
 
 export function ConsentScreen({ clinic, onAgree }: { clinic: Clinic; onAgree: () => void }) {
@@ -19,6 +20,9 @@ export function ConsentScreen({ clinic, onAgree }: { clinic: Clinic; onAgree: ()
     <div className="mx-auto flex min-h-dvh w-full max-w-phone flex-col bg-white pb-[max(1rem,env(safe-area-inset-bottom))]">
       <AppBar title={clinic.name} logoUrl={clinic.logo_url} right={clinic.is_sample ? <Chip>Sample clinic</Chip> : null} />
       <div className="px-4 pt-2">
+        <MeshPhoto className="mb-5 rounded-[18px]">
+          <span className="absolute left-3 top-3 rounded-[8px] bg-black/55 px-2.5 py-1 text-[12px] font-bold tracking-[0.04em] text-white">WHAT THE SCAN SEES</span>
+        </MeshPhoto>
         <p className="text-[11px] font-medium tracking-[0.12em] text-brand-ink">BEFORE THE CAMERA OPENS</p>
         <h1 className="font-display mt-1 text-[24px]">Here is exactly what happens with your photo.</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
