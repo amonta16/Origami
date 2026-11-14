@@ -32,5 +32,5 @@ Startup Launch Award.
 ## Links
 
 - Live: https://facet-tau-weld.vercel.app
-- Repo: https://github.com/amonta16/facet (must be public or shared with judges before submitting)
+- Repo: https://github.com/amonta16/facet (public since Sat Nov 14, 1:15 PM)
 - Demo video (< 2 min, unlisted): [URL]
