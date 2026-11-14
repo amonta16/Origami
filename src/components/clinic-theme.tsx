@@ -9,7 +9,7 @@ export function ClinicTheme({ clinic, className, children }: { clinic: Clinic; c
     ? ({ "--brand": brand, "--brand-deep": shade(brand, -0.22), "--brand-soft": tint(brand, 0.9), "--brand-ink": shade(brand, -0.15) } as React.CSSProperties)
     : undefined;
   return (
-    <div style={style} className={cn("min-h-dvh bg-white text-ink", className)}>
+    <div style={style} className={cn("min-h-dvh text-ink", /(^|\s)bg-/.test(className ?? "") ? null : "bg-white", className)}>
       {children}
     </div>
   );
