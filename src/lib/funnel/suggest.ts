@@ -80,25 +80,44 @@ async function propose(q: string): Promise<Array<{ name: string; city: string; s
     },
     required: ["spas"],
   };
-  type Out = { spas: Array<{ name: string; city: string; state: string; website: string }> };
-  for (const model of MODELS) {
-    try {
-      const out = await deadline<{ data: Out } | null>(geminiStructured<Out>({
-        model,
-        noFallback: true,
-        system:
-          'You autocomplete US medical spa names while an owner types. The text may stop mid-word ("MedSpa SL" can mean "MedSpa SLO"), may include a city, and may be lowercase or missing spaces. List up to 6 real, currently operating med spas or aesthetic clinics whose name starts with or contains it, most likely first, with the official homepage domain. Never list directories or social profiles. Return fewer when unsure.',
-        user: `Typed so far: ${q}`,
-        images: [],
-        schema,
-        temperature: 0,
-      }), 6000, null);
-      if (out) return out.data.spas ?? [];
-    } catch {
-      // quota or overload on this model; try the next light one
-    }
-  }
-  return [];
+  type Spa = { name: string; city: string; state: string; website: string };
+  const ask = (model: string) =>
+    geminiStructured<{ spas: Spa[] }>({
+      model,
+      noFallback: true,
+      system:
+        'You autocomplete US medical spa names while an owner types. The text may stop mid-word ("MedSpa SL" can mean "MedSpa SLO"), may include a city, and may be lowercase or missing spaces. List up to 6 real, currently operating med spas or aesthetic clinics whose name starts with or contains it, most likely first, with the official homepage domain. Never list directories or social profiles. Return fewer when unsure.',
+      user: `Typed so far: ${q}`,
+      images: [],
+      schema,
+      temperature: 0,
+    }).then((o) => o.data.spas ?? []);
+
+  // Hedged: the first light model usually answers in ~1 s, but from Vercel it sometimes stalls
+  // for 6 s+. If it hasn't answered in 2 s (or fails), the second starts; first answer wins.
+  return new Promise<Spa[]>((resolve) => {
+    let settled = false;
+    let failures = 0;
+    let started = 0;
+    const done = (list: Spa[]) => {
+      if (!settled) {
+        settled = true;
+        resolve(list);
+      }
+    };
+    const start = (i: number) => {
+      if (settled || i >= MODELS.length || i < started) return;
+      started = i + 1;
+      ask(MODELS[i]).then(done, () => {
+        failures++;
+        if (failures >= MODELS.length) done([]);
+        else start(i + 1);
+      });
+    };
+    start(0);
+    setTimeout(() => start(1), 2000);
+    setTimeout(() => done([]), 8000);
+  });
 }
 
 export async function suggestSpas(raw: string): Promise<SpaSuggestion[]> {
