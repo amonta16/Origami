@@ -16,8 +16,8 @@ Three users, one loop:
 
 Phase 0 (setup) in progress. See `BUILD_LOG.md` for a timestamped log of what was built and which AI tools did what.
 
-- Live URL: _coming in Phase 0_
-- Repo: _this one_
+- Live URL: https://facet-tau-weld.vercel.app
+- Repo: https://github.com/amonta16/facet (private during the event)
 
 ## Stack
 
