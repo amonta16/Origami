@@ -9,7 +9,7 @@ type FieldProps = {
 };
 
 const fieldBase =
-  "block w-full rounded-field border bg-surface px-4 text-[16px] text-ink placeholder:text-ink-muted/70 transition-[border-color,box-shadow] duration-150 focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/15 disabled:opacity-50";
+  "block w-full rounded-field border bg-surface px-4 text-[16px] text-ink placeholder:text-ink-muted/70 transition-[border-color,box-shadow] duration-150 focus:outline-none focus:border-ink focus:ring-4 focus:ring-ink/10 disabled:opacity-50";
 
 export function Input({
   label,
@@ -31,11 +31,7 @@ export function Input({
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         {...rest}
-        className={cn(
-          fieldBase,
-          "h-12",
-          error ? "border-danger" : "border-line-strong",
-        )}
+        className={cn(fieldBase, "h-12", error ? "border-danger" : "border-line")}
       />
       {error ? (
         <p id={`${inputId}-err`} className="text-sm text-danger">
@@ -70,11 +66,7 @@ export function Textarea({
         rows={rows}
         aria-invalid={error ? true : undefined}
         {...rest}
-        className={cn(
-          fieldBase,
-          "py-3 leading-relaxed",
-          error ? "border-danger" : "border-line-strong",
-        )}
+        className={cn(fieldBase, "py-3 leading-relaxed", error ? "border-danger" : "border-line")}
       />
       {error ? (
         <p className="text-sm text-danger">{error}</p>

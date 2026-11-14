@@ -72,7 +72,7 @@ export function BottomSheet({
           aria-hidden="true"
           className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-line-strong"
         />
-        {title && <h2 className="font-display mb-3 text-2xl">{title}</h2>}
+        {title && <h2 className="font-display mb-3 text-xl">{title}</h2>}
         {children}
       </div>
     </div>

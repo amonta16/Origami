@@ -1,58 +1,70 @@
 @import "tailwindcss";
 
 /*
-  Facet design tokens — "clinical luxe".
-  Source of truth for color, type, radius and shadow. Tailwind 4 reads the
-  @theme block as its config, so every token below is also a utility class
-  (bg-ivory, text-ink, font-display, rounded-card, shadow-soft, ...).
+  Facet design tokens.
+  Retuned Sat Nov 14, 2026 toward the team's disclosed design reference
+  (reference/REFERENCE.md): white surfaces on a light gray page, near-black text,
+  hairline borders, black pill primaries, and ONE clinic brand color doing all the
+  accent work. Tailwind 4 reads @theme as its config, so every token is also a
+  utility (bg-page, text-ink-muted, bg-brand, rounded-card, ...).
+
+  Legacy aliases (--ivory, --accent) are kept so earlier components keep working.
 */
 
 :root {
   /* Base */
-  --ivory: #f8f4ed;
-  --ivory-deep: #efe8dc;
-  --surface: #fffdf9;
-  --ink: #17130f;
-  --ink-soft: #3d352d;
-  --ink-muted: #76695c;
-  --line: #e6ddd0;
-  --line-strong: #cfc3b3;
+  --page: #f7f7f8;
+  --surface: #ffffff;
+  --surface-muted: #f3f4f6;
+  --ink: #111318;
+  --ink-soft: #3a3d45;
+  --ink-muted: #6f7380;
+  --line: #ececef;
+  --line-strong: #d9dbe0;
 
-  /* One confident accent: clinic green */
-  --accent: #1f5e4b;
-  --accent-deep: #164838;
-  --accent-soft: #dcebe3;
-  --accent-ink: #0f3a2d;
+  /* Clinic brand color. Overridden per clinic on /s/[clinic] via inline style. */
+  --brand: #92191c;
+  --brand-deep: #6f1216;
+  --brand-soft: #f9eceb;
+  --brand-ink: #7a1418;
 
   /* Severity ramp for concerns (never used for brand) */
-  --sev-none: #c9d9d0;
-  --sev-mild: #e8c48a;
+  --sev-none: #cfd8d3;
+  --sev-mild: #e6c38a;
   --sev-moderate: #d98d5a;
   --sev-pronounced: #b4443e;
   --sev-pronounced-soft: #f4dcd8;
 
   /* Feedback */
-  --ok: #1f5e4b;
+  --ok: #1e7f4f;
   --warn: #b8761c;
   --danger: #a93a34;
 
-  --shadow-soft: 0 1px 2px rgba(23, 19, 15, 0.04), 0 14px 36px -16px rgba(23, 19, 15, 0.18);
-  --shadow-lift: 0 2px 4px rgba(23, 19, 15, 0.05), 0 24px 56px -20px rgba(23, 19, 15, 0.26);
+  --shadow-soft: 0 1px 2px rgba(17, 19, 24, 0.04), 0 10px 28px -18px rgba(17, 19, 24, 0.14);
+  --shadow-lift: 0 2px 4px rgba(17, 19, 24, 0.05), 0 24px 56px -22px rgba(17, 19, 24, 0.24);
+
+  /* Legacy aliases */
+  --ivory: var(--page);
+  --ivory-deep: var(--surface-muted);
+  --accent: var(--brand);
+  --accent-deep: var(--brand-deep);
+  --accent-soft: var(--brand-soft);
+  --accent-ink: var(--brand-ink);
 }
 
 @theme inline {
-  --color-ivory: var(--ivory);
-  --color-ivory-deep: var(--ivory-deep);
+  --color-page: var(--page);
   --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-ink-muted: var(--ink-muted);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
-  --color-accent: var(--accent);
-  --color-accent-deep: var(--accent-deep);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-ink: var(--accent-ink);
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
   --color-sev-none: var(--sev-none);
   --color-sev-mild: var(--sev-mild);
   --color-sev-moderate: var(--sev-moderate);
@@ -62,13 +74,22 @@
   --color-warn: var(--warn);
   --color-danger: var(--danger);
 
-  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+  /* legacy aliases as utilities too */
+  --color-ivory: var(--page);
+  --color-ivory-deep: var(--surface-muted);
+  --color-accent: var(--brand);
+  --color-accent-deep: var(--brand-deep);
+  --color-accent-soft: var(--brand-soft);
+  --color-accent-ink: var(--brand-ink);
+
   --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
 
   --radius-chip: 999px;
-  --radius-field: 14px;
-  --radius-card: 20px;
-  --radius-sheet: 28px;
+  --radius-field: 12px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
 
   --shadow-soft: var(--shadow-soft);
   --shadow-lift: var(--shadow-lift);
@@ -78,7 +99,7 @@
 }
 
 html {
-  background: var(--ivory);
+  background: var(--page);
   color: var(--ink);
   font-family: var(--font-sans);
   font-feature-settings: "cv11", "ss01";
@@ -86,35 +107,50 @@ html {
 }
 
 body {
-  background: var(--ivory);
+  background: var(--page);
   color: var(--ink);
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
-/* Display type: Fraunces with the soft optical axis up, tight tracking */
+/* Headings: the same sans, semibold, tight. */
 .font-display {
-  font-variation-settings: "SOFT" 60, "WONK" 0;
-  letter-spacing: -0.015em;
-  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
 }
 
 .font-display-numeral {
-  font-variation-settings: "SOFT" 80, "WONK" 0;
+  font-weight: 600;
   font-variant-numeric: lining-nums tabular-nums;
   letter-spacing: -0.03em;
   line-height: 1;
 }
 
-/* Focus: visible, warm, never removed */
+/* Editorial serif, reserved for report-style moments. */
+.font-serif-display {
+  font-family: var(--font-serif);
+  font-variation-settings: "SOFT" 50, "WONK" 0;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+/* Focus: visible, never removed */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ink);
   outline-offset: 3px;
   border-radius: 6px;
 }
 
 ::selection {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+/* Brand-colored native controls */
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  accent-color: var(--brand);
 }
 
 @media (prefers-reduced-motion: reduce) {

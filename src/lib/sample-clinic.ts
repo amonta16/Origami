@@ -10,7 +10,7 @@ export const SAMPLE_CLINIC: Clinic = {
   slug: "sample",
   name: "Sample Aesthetics",
   logo_url: null,
-  brand_color: "#1f5e4b",
+  brand_color: "#92191c",
   phone: "(805) 555-0100",
   address: "123 Example St, San Luis Obispo, CA 93401",
   website: "https://example.com",

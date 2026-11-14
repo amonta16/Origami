@@ -94,8 +94,8 @@ export function ScoreRing({
         >
           {Math.round(shown)}
         </div>
-        <div className="mt-1 text-[13px] font-medium text-ink-muted">{label}</div>
-        {caption && <div className="text-[12px] text-accent-ink">{caption}</div>}
+        <div className="mt-1 text-[12px] font-medium text-ink-muted">{label}</div>
+        {caption && <div className="text-[12px] text-brand-ink">{caption}</div>}
       </div>
     </div>
   );

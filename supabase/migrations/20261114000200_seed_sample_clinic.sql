@@ -7,7 +7,7 @@ insert into public.clinics (slug, name, brand_color, phone, address, website, bo
 values (
   'sample',
   'Sample Aesthetics',
-  '#1f5e4b',
+  '#92191c',
   '(805) 555-0100',
   '123 Example St, San Luis Obispo, CA 93401',
   'https://example.com',
