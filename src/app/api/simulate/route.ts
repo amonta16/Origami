@@ -38,31 +38,45 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Mask too large" }, { status: 413 });
   }
 
-  const provider: SimProvider | undefined =
-    body.provider && ORDER.includes(body.provider)
-      ? body.provider
-      : ((process.env.SIM_PRIMARY_PROVIDER as SimProvider | undefined) && providerConfigured(process.env.SIM_PRIMARY_PROVIDER as SimProvider)
-          ? (process.env.SIM_PRIMARY_PROVIDER as SimProvider)
-          : ORDER.find(providerConfigured));
-  if (!provider) {
-    return NextResponse.json({ error: "No image-edit provider is configured on the server." }, { status: 503 });
+  // An explicit provider (the /lab bake-off) runs alone so its own error shows.
+  // Otherwise: SIM_PRIMARY_PROVIDER first, then every other configured provider in ORDER,
+  // so one provider's outage or empty balance never blanks the patient's "after".
+  const explicit = body.provider && ORDER.includes(body.provider) ? body.provider : null;
+  if (explicit && !providerConfigured(explicit)) {
+    return NextResponse.json({ error: `${explicit} is not configured on the server.` }, { status: 503 });
   }
-  if (!providerConfigured(provider)) {
-    return NextResponse.json({ error: `${provider} is not configured on the server.` }, { status: 503 });
+  const primary = process.env.SIM_PRIMARY_PROVIDER as SimProvider | undefined;
+  const chain: SimProvider[] = explicit
+    ? [explicit]
+    : [...(primary && ORDER.includes(primary) ? [primary] : []), ...ORDER.filter((p) => p !== primary)].filter(providerConfigured);
+  if (!chain.length) {
+    return NextResponse.json({ error: "No image-edit provider is configured on the server." }, { status: 503 });
   }
 
   const prompt = body.promptOverride?.trim() || SIM_PROMPTS[body.kind].prompt;
-  try {
-    const out = await runEdit(provider, {
-      image: body.image,
-      mask: body.useMask ? body.mask ?? null : null,
-      maskBW: body.useMask ? body.maskBW ?? null : null,
-      useMask: Boolean(body.useMask),
-      prompt,
-    });
-    return NextResponse.json({ image: out.image, provider, model: out.model, ms: out.ms });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Simulation failed";
-    return NextResponse.json({ error: msg, provider }, { status: 502 });
+  const failures: Array<{ provider: SimProvider; error: string }> = [];
+  for (const provider of chain) {
+    try {
+      const out = await runEdit(provider, {
+        image: body.image,
+        mask: body.useMask ? body.mask ?? null : null,
+        maskBW: body.useMask ? body.maskBW ?? null : null,
+        useMask: Boolean(body.useMask),
+        prompt,
+      });
+      return NextResponse.json({
+        image: out.image,
+        provider,
+        model: out.model,
+        ms: out.ms,
+        fellBackFrom: failures.length ? failures : undefined,
+      });
+    } catch (e) {
+      const error = e instanceof Error ? e.message : "Simulation failed";
+      console.warn(`simulate: ${provider} failed: ${error}`);
+      failures.push({ provider, error });
+    }
   }
+  const last = failures[failures.length - 1];
+  return NextResponse.json({ error: last.error, provider: last.provider, failures }, { status: 502 });
 }

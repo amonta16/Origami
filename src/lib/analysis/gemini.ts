@@ -44,6 +44,11 @@ export async function geminiStructured<T>(args: {
         // Thinking tokens count against this cap on Gemini 3 (a one-word probe spent 60 on thought),
         // so leave generous room or the JSON gets cut off mid-object.
         max_output_tokens: 16000,
+        // Gemini 3 thinks by default; "low" trades a little depth for a lot of latency.
+        // GEMINI_THINKING_LEVEL=off omits the setting (for models that reject it).
+        ...(process.env.GEMINI_THINKING_LEVEL === "off"
+          ? {}
+          : { thinkingConfig: { thinkingLevel: process.env.GEMINI_THINKING_LEVEL || "low" } }),
       },
     }),
   });

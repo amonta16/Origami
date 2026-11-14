@@ -8,7 +8,9 @@ import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
 import { isSupabaseConfigured, supabaseAdmin, supabaseEnv } from "@/lib/supabase/server";
 import type { ScanResults } from "@/lib/types";
 
-export const maxDuration = 60;
+// A full scan is one photo + up to 8 crops; Gemini took ~36 s on a single image in testing,
+// and a failed primary provider adds its own time before the fallback runs.
+export const maxDuration = 120;
 
 const DISCLAIMER = "Cosmetic estimates from a photo, not a medical diagnosis. A clinician confirms in person.";
 
@@ -224,7 +226,7 @@ export async function POST(req: Request) {
   const crops = (body.crops ?? []).slice(0, 8).filter((c) => c.dataUrl?.startsWith("data:image/"));
   const t0 = Date.now();
   type Raw = Omit<ScanResults, "provider" | "model" | "disclaimer">;
-  let raw: Raw;
+  let raw: Raw | null = null;
   let model = "";
   const system = analysisSystemPrompt();
   const user = analysisUserPrompt({
@@ -236,8 +238,9 @@ export async function POST(req: Request) {
   });
   const images = [body.photo, ...crops.map((c) => c.dataUrl)];
   const ids = treatments.map((t) => t.id);
-  try {
-    if (provider === "openai") {
+
+  const runWith = async (p: "openai" | "gemini"): Promise<{ raw: Raw; model: string }> => {
+    if (p === "openai") {
       const out = await openaiStructured<Raw>({
         system,
         user,
@@ -245,25 +248,47 @@ export async function POST(req: Request) {
         schemaName: "skin_analysis",
         schema: analysisSchema(ids) as unknown as Record<string, unknown>,
       });
-      raw = out.data;
-      model = out.model;
-    } else {
-      const out = await geminiStructured<Raw & { skin_age: number; medical_flag: string }>({
-        system,
-        user,
-        images,
-        schema: analysisSchemaGemini(ids) as unknown as Record<string, unknown>,
-      });
-      raw = {
+      return { raw: out.data, model: out.model };
+    }
+    const out = await geminiStructured<Raw & { skin_age: number; medical_flag: string }>({
+      system,
+      user,
+      images,
+      schema: analysisSchemaGemini(ids) as unknown as Record<string, unknown>,
+    });
+    return {
+      raw: {
         ...out.data,
         skin_age: out.data.skin_age && out.data.skin_age >= 16 ? out.data.skin_age : null,
         medical_flag: out.data.medical_flag?.trim() ? out.data.medical_flag.trim() : null,
-      };
+      },
+      model: out.model,
+    };
+  };
+
+  // Primary provider first; if it errors (empty balance, outage, bad output) try the other
+  // one when its key exists, so a patient never hits a dead end over a billing problem.
+  const other: "openai" | "gemini" = provider === "openai" ? "gemini" : "openai";
+  const otherConfigured =
+    other === "openai" ? Boolean(process.env.OPENAI_API_KEY) : Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
+  const chain = otherConfigured ? [provider, other] : [provider];
+  let used: "openai" | "gemini" = provider;
+  const failures: Array<{ provider: string; error: string }> = [];
+  for (const p of chain) {
+    try {
+      const out = await runWith(p);
+      raw = out.raw;
       model = out.model;
+      used = p;
+      break;
+    } catch (e) {
+      const error = e instanceof Error ? e.message : "Analysis failed";
+      console.warn(`analyze: ${p} failed: ${error}`);
+      failures.push({ provider: p, error });
     }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Analysis failed";
-    return NextResponse.json({ error: msg }, { status: 502 });
+  }
+  if (!raw) {
+    return NextResponse.json({ error: failures[failures.length - 1].error, failures }, { status: 502 });
   }
 
   // Normalize: severity must match score; sort worst first; potential >= overall.
@@ -280,7 +305,7 @@ export async function POST(req: Request) {
     concerns,
     recommendations,
     medical_flag: raw.medical_flag,
-    provider,
+    provider: used,
     model,
     disclaimer: DISCLAIMER,
   };
