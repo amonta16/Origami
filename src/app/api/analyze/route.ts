@@ -53,10 +53,16 @@ export async function GET(req: Request) {
   };
   if (!ping) return NextResponse.json(out);
 
-  if (provider) {
+  // Each probe gets its own 15 s budget and they run in parallel, so a hang is reported by name
+  // instead of taking the whole function down with FUNCTION_INVOCATION_TIMEOUT.
+  const PROBE_MS = 15_000;
+
+  const probeProvider = async () => {
+    if (!provider) return;
     const t0 = Date.now();
     try {
       let res: Response;
+      const signal = AbortSignal.timeout(PROBE_MS);
       if (provider === "gemini") {
         const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
         res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_VISION_MODEL}:generateContent`, {
@@ -66,12 +72,14 @@ export async function GET(req: Request) {
             contents: [{ role: "user", parts: [{ text: "Reply with the single word ok." }] }],
             generationConfig: { max_output_tokens: 8 },
           }),
+          signal,
         });
       } else {
         res = await fetch("https://api.openai.com/v1/responses", {
           method: "POST",
           headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "content-type": "application/json" },
           body: JSON.stringify({ model: OPENAI_VISION_MODEL, input: "Reply with the single word ok.", max_output_tokens: 16 }),
+          signal,
         });
       }
       const json = (await res.json()) as { error?: { message?: string }; modelVersion?: string; model?: string };
@@ -84,16 +92,28 @@ export async function GET(req: Request) {
         ms: Date.now() - t0,
       };
     } catch (e) {
-      out.analysis = { provider, model, ok: false, error: e instanceof Error ? e.message : String(e), ms: Date.now() - t0 };
+      const msg = e instanceof Error ? (e.name === "TimeoutError" ? `no answer in ${PROBE_MS / 1000}s` : e.message) : String(e);
+      out.analysis = { provider, model, ok: false, error: msg, ms: Date.now() - t0 };
     }
-  }
+  };
 
-  const sb = supabaseAdmin();
-  if (sb) {
+  const probeSupabase = async () => {
+    const sb = supabaseAdmin();
+    if (!sb) return;
     const t0 = Date.now();
-    const { count, error } = await sb.from("clinics").select("id", { count: "exact", head: true });
-    out.supabase = { configured: true, ok: !error, clinics: count ?? null, error: error?.message ?? null, ms: Date.now() - t0 };
-  }
+    try {
+      const { count, error } = await sb
+        .from("clinics")
+        .select("id", { count: "exact", head: true })
+        .abortSignal(AbortSignal.timeout(PROBE_MS));
+      out.supabase = { configured: true, ok: !error, clinics: count ?? null, error: error?.message ?? null, ms: Date.now() - t0 };
+    } catch (e) {
+      const msg = e instanceof Error ? (e.name === "TimeoutError" ? `no answer in ${PROBE_MS / 1000}s` : e.message) : String(e);
+      out.supabase = { configured: true, ok: false, error: msg, ms: Date.now() - t0 };
+    }
+  };
+
+  await Promise.all([probeProvider(), probeSupabase()]);
   return NextResponse.json(out);
 }
 
