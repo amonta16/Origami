@@ -23,17 +23,21 @@ Status: ✅ built · 🛠 in progress · ⏳ planned
 | 13b | `/s/[clinic]/visit` center tab: check-in QR + 6-digit code, link to the AI scan | Phase 5 prompt | Matched to reference | app-07-check-in-code | ✅ |
 | 13c | Join sheet (first name, mobile, 18+, optional texts) + signed session cookie | Phase 3 prompt | Rebuilt from phase prompt; sheet idiom from reference | — | ✅ |
 | 13d | `/s/[clinic]/legal` terms, privacy, AI face scan notice, California notice | CLAUDE.md safety rules | Rebuilt (plain-language, new copy) | app-09 (legal links row) | ✅ |
-| 14 | Owner funnel: search → "Building your scanner…" → phone frame + QR | Phase 2 prompt | Rebuilt from phase prompt; phone-frame preview idiom from reference | desk-05 (phone preview) | ⏳ |
-| 15 | Owner funnel: "Make it live" form + thank-you | Phase 2 prompt | Rebuilt from phase prompt | — | ⏳ |
+| 14 | Owner funnel `/`: type your spa → verified site lookup → streamed "Building your app…" animation | Phase 2 prompt | Rebuilt from phase prompt (new flow; no equivalent recorded) | — | ✅ |
+| 14a | `/p/[slug]` owner preview: live app in a phone frame + pitch, "Wrong logo or color? Fix it" | Phase 2 prompt | Matched to reference | preview-01 … preview-12 | ✅ |
+| 15 | "Book my free call" form → owner_leads + thank-you | Phase 2 prompt | Rebuilt from phase prompt | preview-01 (button) | ✅ |
+| 15a | Results screen "Compare models" + after-image model picker, runs saved, `/lab/runs` | Team request (testers) | New | — | ✅ |
 | 16 | `/admin` owner leads, scanners built, funnel events | Phase 2 prompt | Matched to reference (desk list/table idiom) | desk-02-insights | ⏳ |
 | 17 | `/admin/proof` weekend proof | Phase 5 prompt | Matched to reference (KPI tiles) | desk-02-insights | ⏳ |
-| 18 | `/dashboard` home: today's numbers + live feed | Phase 4 prompt | Matched to reference | desk-01-home-setup, desk-02-insights | ⏳ |
-| 19 | `/dashboard/leads` cards + AI first text + speed-to-lead | Phase 4 prompt | Rebuilt from phase prompt; desk chrome from reference | desk-03-check-in-empty (chrome) | ⏳ |
-| 20 | `/dashboard/due` touch-up list + recall text | Phase 4 prompt | Rebuilt from phase prompt; list idiom from reference | desk-08-treatments (list) | ⏳ |
-| 21 | `/dashboard/visits` | Phase 4 prompt | Matched to reference (list + toggles) | desk-08 | ⏳ |
-| 22 | `/dashboard/treatments` menu editor | Phase 4 prompt | Matched to reference | desk-08-treatments | ⏳ |
-| 23 | `/dashboard/settings` brand, booking, scanner link + QR, scan toggle | Phase 4 prompt | Matched to reference | desk-13-brand-settings, desk-10-ai-skin-scan-setting | ⏳ |
-| 24 | Dashboard shell: sidebar nav, header with brand CTA, help box | Phase 4 prompt | Matched to reference | desk-01 … desk-13 | ⏳ |
-| 25 | Check-in by QR/PIN (COULD) | Phase 4 prompt | Matched to reference | desk-03, app-07 | ⏳ if time |
-| 26 | `/s/[clinic]/shop`: Browse (promo banner, category icons, most booked, packages, skincare, gift cards), Memberships (plan cards), Treatments (filter, sort, treatment cards); item sheet with member price and "request" (no payment in app) | Phase 5 prompt | Matched to reference | app-04-shop, app-05-shop-packages, app-06-treatment-detail | ✅ patient side; clinic-side editors (desk-09, desk-11) ⏳ |
+| 18 | `/desk/[clinic]` home: greeting, setup cards, finish-setting-up checklist from real state | Phase 4 prompt | Matched to reference | desk-01-home-setup | ✅ |
+| 18a | `/desk/[clinic]/insights` KPI tiles, 12-week chart, weekday bars, stat cards (real counts) | Phase 4 prompt | Matched to reference | desk-02-insights | ✅ |
+| 19 | `/desk/[clinic]/clients` searchable list + detail panel | Phase 4 prompt | Rebuilt from phase prompt; desk chrome from reference | desk-03 (chrome) | ✅ (AI first text ⏳) |
+| 20 | `/desk/[clinic]/due` overdue / this week / next week + copy recall text | Phase 4 prompt | Rebuilt from phase prompt; list idiom from reference | desk-08 (list) | ✅ (sending ⏳, texting not connected) |
+| 21 | `/desk/[clinic]/orders` shop requests: confirm / cancel (membership confirm sets the plan) | Phase 5 prompt | Matched to reference (list + filters) | desk-08 | ✅ |
+| 22 | App Builder › Products: treatments, shop items, AI skin scan toggle | Phase 4 prompt | Matched to reference | desk-08-treatments, desk-09-shop-builder, desk-10 | ✅ |
+| 22a | App Builder › Membership, Rewards (cards + edit modal), Journey (switches saved only) | Phase 5 prompt | Matched to reference | desk-05, desk-07, desk-11, desk-12 | ✅ |
+| 23 | App Builder › Settings: brand, clinic details, points | Phase 4 prompt | Matched to reference | desk-13-brand-settings | ✅ |
+| 24 | Desk shell: sidebar nav, header with brand "Scan QR", View app, help box | Phase 4 prompt | Matched to reference | desk-01 … desk-13 | ✅ |
+| 25 | `/desk/[clinic]/check-in`: phone / name / code / QR, check in + visit points, mark reward used | Phase 4 prompt | Matched to reference | desk-03, app-07 | ✅ (camera QR untested on a device) |
+| 26 | `/s/[clinic]/shop`: Browse (promo banner, category icons, most booked, packages, skincare, gift cards), Memberships (plan cards), Treatments (filter, sort, treatment cards); item sheet with member price and "request" (no payment in app) | Phase 5 prompt | Matched to reference | app-04-shop, app-05-shop-packages, app-06-treatment-detail, preview-06 … preview-09 | ✅ |
 | 3 | `/s/[clinic]` home rebuilt: hero + greeting, points pill, AI scan card, "Popular right now" | Phase 3 prompt | Matched to reference | app-01-home-hero, app-02-home-scan-card | ✅ |

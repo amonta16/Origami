@@ -14,7 +14,7 @@ Three users, one loop:
 
 ## Status
 
-Phase 0 (setup) done; Phase 1 (face scan core) built and deployed, pending API keys and a real-phone camera test. Supabase project live with schema and sample clinic. See `BUILD_LOG.md` for a timestamped log of what was built and which AI tools did what.
+Built and deployed: the AI face scan (with a tester model picker), the patient app (home, shop, memberships, check-in, rewards, profile), the owner funnel (type your spa → your app, built from your website) and the front desk dashboard. After-image previews need a funded image provider; the live camera still needs a real-phone test. See `BUILD_LOG.md` for a timestamped log of what was built and which AI tools did what.
 
 - Live URL: https://facet-tau-weld.vercel.app
 - Repo: https://github.com/amonta16/facet (private during the event)

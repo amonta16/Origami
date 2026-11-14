@@ -36,6 +36,29 @@ Facet's visual design is derived from the team's prior product, the Atlas med sp
 | app-08-rewards | Points card (bronze gradient), ready-to-use row, locked reward cards | My plan rewards (Phase 5) |
 | app-09-profile | Profile list rows with chevrons, legal links | My plan (Phase 3) |
 
+## Second recording (Sat Nov 14, 2026, 4:41 AM)
+
+The team recorded a second, 58-second clip of the old product's **owner preview page**, the page an owner saw after the old app was generated for their spa: their app running inside a phone frame on the left, the pitch on the right. Twelve stills from it are in `stills/preview-*.jpg`. Same rules as above: design reference only, no patient names or contact details, and the frame with a close-up face was left out.
+
+| File | Shows | Facet equivalent |
+|---|---|---|
+| preview-01-pitch-home-gift | Pitch layout + phone frame; app home with hero, points pill, "A gift for you" wrapped card | `/p/[slug]` preview page; `/s/[clinic]` home + `GiftCard` |
+| preview-02-gift-opened | The gift unwrapped, claim button | `GiftCard` (scratch to unwrap, then claim) |
+| preview-03-member-promo-rewards | Member promo card and rewards row on home | home: member promo, rewards row |
+| preview-04-rewards-row-next-visit | Rewards row, "Book your next visit", treatment explainers | home: next visit row, explainer cards |
+| preview-05-about-map | About us, map, address | home: about + map |
+| preview-06-shop-browse | Shop browse: banner, category icons, photo grid | `/s/[clinic]/shop` |
+| preview-07-treatment-detail | Treatment page with Back, chip, meta, Book now | `/s/[clinic]/t/[id]` |
+| preview-08-memberships-tab | Memberships tab card grid | `/s/[clinic]/shop?tab=memberships` |
+| preview-09-membership-detail | Membership page: benefits, tiles, subscribe | `/s/[clinic]/m/[id]` |
+| preview-10-rewards-guest | Guest points card with Sign in | `/s/[clinic]/rewards` |
+| preview-11-earn-points | "Need more points?" rows with point pills | rewards: ways to earn |
+| preview-12-profile-guest | Guest profile: sign in card, rows, legal links | `/s/[clinic]/profile` |
+
+Deliberately **not** carried over from that page: the launch-bonus countdown timer, the "N med spas built their app this week" counter and the review strip. Facet has no real numbers behind those yet, so it doesn't show them. The Klarna banner is also left out (no financing integration).
+
+The old product generated its preview from a sales team's setup. Facet's owner funnel is new: an owner types their spa, Facet verifies the official website, reads it, and builds the preview in about 15 seconds with a live build animation.
+
 ## What was taken from the reference (design only)
 
 - **Palette:** white surfaces on a very light gray page, near-black text, gray secondary text, hairline borders. One clinic **brand color** does all the accent work: primary "Scan QR" button, active nav marker, tab underline, toggles, progress and chart bars. Primary actions are otherwise **black pills**; secondary actions are white pills with a border. A soft pink tint of the brand color backs the help box and selected rows.
