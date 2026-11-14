@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { Bonuses } from "@/components/funnel/bonuses";
 import { ClinicTheme } from "@/components/clinic-theme";
 import { BookCallButton, FixItButton, LookAroundButton, PhoneFrame } from "@/components/funnel/preview-client";
 import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
@@ -28,6 +30,9 @@ async function Preview({ params }: { params: PageProps<"/p/[slug]">["params"] })
   if (!clinic) notFound();
   const [owner, treatments] = await Promise.all([isOwner(clinic.id), getTreatments(clinic.id)]);
   const shortName = clinic.name.split(/\s+[|\-–—·]\s+|\s+l\s+/)[0];
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const origin = `${h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https")}://${host}`;
 
   return (
     <ClinicTheme clinic={clinic} className="bg-page">
@@ -78,6 +83,8 @@ async function Preview({ params }: { params: PageProps<"/p/[slug]">["params"] })
               </li>
             ))}
           </ul>
+
+          <Bonuses clinic={clinic} treatments={treatments} origin={origin} />
 
           <h2 className="font-display mt-10 text-[22px]">Where patients slip away</h2>
           <ul className="mt-4 flex flex-col gap-3.5">

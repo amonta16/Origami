@@ -8,7 +8,7 @@ import { PLACEHOLDER_FACE as F } from "@/lib/placeholder-face";
  * The dots sit on landmarks measured from this exact photo (see placeholder-face.ts).
  */
 /** The example face with its traced mesh and scanning band. Used on Home and before the camera opens. */
-export function MeshPhoto({ fadeTo, className, children }: { fadeTo?: "brand"; className?: string; children?: React.ReactNode }) {
+export function MeshPhoto({ fadeTo, className, children, creditTop }: { fadeTo?: "brand"; className?: string; children?: React.ReactNode; creditTop?: boolean }) {
   const k = 95 / 100; // viewBox is 100 × 95 to match the 900 × 855 photo
   const pt = ([x, y]: [number, number]) => `${x},${(y * k).toFixed(2)}`;
   const ovalPath = `M${F.oval.map(pt).join(" L")} Z`;
@@ -25,7 +25,7 @@ export function MeshPhoto({ fadeTo, className, children }: { fadeTo?: "brand"; c
       </svg>
       <span aria-hidden="true" className="scan-band pointer-events-none absolute inset-x-0 h-[9%]" />
       {children}
-      <span className="absolute bottom-1.5 right-2 z-10 text-[9px] text-white/75">Example photo · Unsplash</span>
+      <span className={`absolute right-2 z-10 text-[9px] text-white/75 ${creditTop ? "top-6" : "bottom-1.5"}`}>Example photo · Unsplash</span>
       {fadeTo === "brand" && <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-brand-deep to-transparent" />}
       <style>{`
         .scan-band { top: 0; background: linear-gradient(180deg, transparent, rgba(255,255,255,.55) 45%, rgba(255,255,255,.55) 55%, transparent); animation: scan-sweep 3.2s ease-in-out infinite; }

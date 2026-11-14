@@ -33,6 +33,28 @@ export function PhoneFrame({ src, title }: { src: string; title: string }) {
   );
 }
 
+/** Copies text (an embed snippet) and says so for two seconds. */
+export function CopyButton({ text, label }: { text: string; label: string }) {
+  const [done, setDone] = React.useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+          setDone(true);
+          setTimeout(() => setDone(false), 2000);
+        } catch {
+          window.prompt("Copy this code:", text);
+        }
+      }}
+      className="inline-flex h-9 items-center rounded-chip bg-ink px-3.5 text-[13px] font-medium text-white hover:bg-ink/85"
+    >
+      <span aria-live="polite">{done ? "Copied" : label}</span>
+    </button>
+  );
+}
+
 export function LookAroundButton() {
   return (
     <button

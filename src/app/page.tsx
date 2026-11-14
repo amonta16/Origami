@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { OwnerFunnel } from "@/components/funnel/owner-funnel";
+import { DeskArt, ScanArt, SiteToAppArt } from "@/components/marketing/pillar-art";
 
 // Owner funnel entry: type your spa, watch your app get built, land on your preview.
 export default function Home() {
@@ -26,15 +27,16 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-3xl gap-3 px-5 pb-16 sm:grid-cols-3 sm:px-8">
+      <section className="mx-auto grid w-full max-w-4xl gap-3 px-5 pb-16 sm:grid-cols-3 sm:px-8">
         {[
-          ["Built from what's already yours", "We read your public website for your menu, photos and colors. You fix anything in a click."],
-          ["An AI face scan that sells", "Each patient sees a realistic preview of your treatments on their own face, then books."],
-          ["A front desk that fills slow days", "Check-ins, points, memberships and who's due for a touch-up, in one place."],
-        ].map(([t, d]) => (
-          <div key={t} className="rounded-card border border-line bg-surface p-5">
-            <p className="text-[15px] font-medium">{t}</p>
-            <p className="mt-1.5 text-[14px] leading-snug text-ink-muted">{d}</p>
+          { art: <SiteToAppArt />, t: "Built from what's already yours", d: "We read your public website for your menu, photos and colors. You fix anything in a click." },
+          { art: <ScanArt />, t: "An AI face scan that sells", d: "Each patient sees a realistic preview of your treatments on their own face, then books." },
+          { art: <DeskArt />, t: "A front desk that fills slow days", d: "Check-ins, points, memberships and who's due for a touch-up, in one place." },
+        ].map(({ art, t, d }) => (
+          <div key={t} className="rounded-card border border-line bg-surface p-2.5 pb-5">
+            {art}
+            <p className="mt-4 px-2.5 text-[15px] font-medium">{t}</p>
+            <p className="mt-1.5 px-2.5 text-[14px] leading-snug text-ink-muted">{d}</p>
           </div>
         ))}
       </section>
