@@ -49,3 +49,26 @@ export function analysisSchema(treatmentIds: string[]) {
     },
   } as const;
 }
+
+/**
+ * Gemini-compatible variant: no union types, no additionalProperties.
+ * skin_age 0 means unknown; medical_flag "" means none. The route normalizes both.
+ */
+export function analysisSchemaGemini(treatmentIds: string[]) {
+  const s = JSON.parse(JSON.stringify(analysisSchema(treatmentIds))) as Record<string, unknown>;
+  const strip = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(strip);
+    if (node && typeof node === "object") {
+      const o = { ...(node as Record<string, unknown>) };
+      delete o.additionalProperties;
+      if (Array.isArray(o.type)) o.type = (o.type as string[]).find((t) => t !== "null") ?? "string";
+      for (const k of Object.keys(o)) o[k] = strip(o[k]);
+      return o;
+    }
+    return node;
+  };
+  const out = strip(s) as { properties: Record<string, Record<string, unknown>> };
+  out.properties.skin_age = { type: "integer", minimum: 0, maximum: 90, description: "Estimated cosmetic skin age in years; 0 if unsure." };
+  out.properties.medical_flag = { type: "string", description: "What should be seen by a dermatologist, or an empty string if nothing." };
+  return out;
+}

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { analysisSchema } from "@/lib/analysis/schema";
+import { analysisSchema, analysisSchemaGemini } from "@/lib/analysis/schema";
 import { analysisSystemPrompt, analysisUserPrompt } from "@/lib/analysis/prompt";
 import { openaiStructured } from "@/lib/analysis/openai";
+import { geminiStructured } from "@/lib/analysis/gemini";
 import { severityFromScore } from "@/lib/concerns";
 import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -42,33 +43,59 @@ export async function POST(req: Request) {
   if (!clinic) return NextResponse.json({ error: "Unknown clinic" }, { status: 404 });
   const treatments = await getTreatments(clinic.id);
 
-  if (!process.env.OPENAI_API_KEY) {
+  // Provider: explicit env, else whichever key exists (OpenAI first, then Gemini's free tier).
+  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
+  const hasGemini = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
+  const wanted = process.env.ANALYSIS_PROVIDER;
+  const provider: "openai" | "gemini" | null =
+    wanted === "gemini" && hasGemini ? "gemini" : wanted === "openai" && hasOpenAI ? "openai" : hasOpenAI ? "openai" : hasGemini ? "gemini" : null;
+  if (!provider) {
     return NextResponse.json(
-      { error: "Analysis isn't configured yet (missing OPENAI_API_KEY on the server)." },
+      { error: "Analysis isn't configured yet (set OPENAI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY on the server)." },
       { status: 503 },
     );
   }
 
   const crops = (body.crops ?? []).slice(0, 8).filter((c) => c.dataUrl?.startsWith("data:image/"));
   const t0 = Date.now();
-  let raw: Omit<ScanResults, "provider" | "model" | "disclaimer">;
+  type Raw = Omit<ScanResults, "provider" | "model" | "disclaimer">;
+  let raw: Raw;
   let model = "";
+  const system = analysisSystemPrompt();
+  const user = analysisUserPrompt({
+    firstName: body.firstName ?? null,
+    answers: body.answers ?? null,
+    treatments,
+    cropIds: crops.map((c) => c.id),
+    source: body.source,
+  });
+  const images = [body.photo, ...crops.map((c) => c.dataUrl)];
+  const ids = treatments.map((t) => t.id);
   try {
-    const out = await openaiStructured<typeof raw>({
-      system: analysisSystemPrompt(),
-      user: analysisUserPrompt({
-        firstName: body.firstName ?? null,
-        answers: body.answers ?? null,
-        treatments,
-        cropIds: crops.map((c) => c.id),
-        source: body.source,
-      }),
-      images: [body.photo, ...crops.map((c) => c.dataUrl)],
-      schemaName: "skin_analysis",
-      schema: analysisSchema(treatments.map((t) => t.id)) as unknown as Record<string, unknown>,
-    });
-    raw = out.data;
-    model = out.model;
+    if (provider === "openai") {
+      const out = await openaiStructured<Raw>({
+        system,
+        user,
+        images,
+        schemaName: "skin_analysis",
+        schema: analysisSchema(ids) as unknown as Record<string, unknown>,
+      });
+      raw = out.data;
+      model = out.model;
+    } else {
+      const out = await geminiStructured<Raw & { skin_age: number; medical_flag: string }>({
+        system,
+        user,
+        images,
+        schema: analysisSchemaGemini(ids) as unknown as Record<string, unknown>,
+      });
+      raw = {
+        ...out.data,
+        skin_age: out.data.skin_age && out.data.skin_age >= 16 ? out.data.skin_age : null,
+        medical_flag: out.data.medical_flag?.trim() ? out.data.medical_flag.trim() : null,
+      };
+      model = out.model;
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Analysis failed";
     return NextResponse.json({ error: msg }, { status: 502 });
@@ -88,7 +115,7 @@ export async function POST(req: Request) {
     concerns,
     recommendations,
     medical_flag: raw.medical_flag,
-    provider: "openai",
+    provider,
     model,
     disclaimer: DISCLAIMER,
   };

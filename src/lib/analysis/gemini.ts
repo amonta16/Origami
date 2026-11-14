@@ -1,0 +1,56 @@
+import "server-only";
+
+/**
+ * Vision analysis through the Gemini API (generateContent, JSON output).
+ * gemini-4-hydrogen is on the free tier and accepts image input (docs checked Nov 14, 2026).
+ * Gemini's JSON-schema subset drops some keywords, so callers pass a simplified schema.
+ */
+export const GEMINI_VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-4-hydrogen";
+
+function splitDataUrl(d: string) {
+  const m = /^data:(image\/[a-z+]+);base64,(.*)$/i.exec(d);
+  if (!m) throw new Error("Expected a base64 image data URL");
+  return { mime: m[1], b64: m[2] };
+}
+
+export async function geminiStructured<T>(args: {
+  system: string;
+  user: string;
+  images: string[];
+  schema: Record<string, unknown>;
+}): Promise<{ data: T; model: string; usage: unknown }> {
+  const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set");
+
+  const parts: unknown[] = [{ text: args.user }];
+  for (const img of args.images) {
+    const { mime, b64 } = splitDataUrl(img);
+    parts.push({ inline_data: { mime_type: mime, data: b64 } });
+  }
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_VISION_MODEL}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": key, "content-type": "application/json" },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: args.system }] },
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        response_mime_type: "application/json",
+        response_json_schema: args.schema,
+        temperature: 0.4,
+        max_output_tokens: 4000,
+      },
+    }),
+  });
+
+  const json = (await res.json()) as {
+    error?: { message: string };
+    modelVersion?: string;
+    usageMetadata?: unknown;
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  if (!res.ok) throw new Error(json.error?.message || `Gemini error ${res.status}`);
+  const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+  if (!text) throw new Error("Gemini returned no text");
+  return { data: JSON.parse(text) as T, model: json.modelVersion ?? GEMINI_VISION_MODEL, usage: json.usageMetadata };
+}

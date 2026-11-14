@@ -1,47 +1,49 @@
 import type { SimKind } from "@/lib/types";
 
 /**
- * Conservative, treatment-specific edit prompts. The model only ever sees the whole
- * photo; our mask decides which pixels survive compositing, so the prompt's job is a
- * believable change inside the zone and nothing anywhere else.
+ * Treatment-specific edit prompts. We ask the model for the FULL, clearly visible
+ * result of a well-done treatment; the dose slider blends it back toward the
+ * original, so "Subtle" is always available without a second render. Our mask
+ * decides which pixels survive compositing, so the prompt's job is a convincing
+ * change inside the zone and an untouched face everywhere else.
  */
 const KEEP =
-  "Keep the exact same person, identity, face shape, pores, skin texture, freckles, lighting, white balance, expression, hair, clothes and background. Do not retouch or smooth skin outside the treated area. Photorealistic, unretouched phone photo, same framing and resolution.";
+  "This must remain the exact same person: identical face shape, eyes, nose, mouth, bone structure, skin tone, freckles, moles, pores, hair, expression, head angle, lighting, white balance, clothing and background. No beauty filter, no airbrushing, no smoothing outside the treated area, no reshaping of anything not named. Output a photorealistic, unretouched phone photo at the same framing and resolution.";
 
 export const SIM_PROMPTS: Record<SimKind, { label: string; prompt: string }> = {
   neurotoxin: {
     label: "Neurotoxin (forehead, frown lines, crow's feet)",
-    prompt: `Soften the horizontal forehead lines, the vertical lines between the eyebrows and the crow's feet by about 50 percent, as two weeks after a conservative neurotoxin treatment. Lines fade and skin looks rested; keep natural pores and texture. ${KEEP}`,
+    prompt: `Edit this photo to show the full result two weeks after a well-done neurotoxin treatment of the upper face. The horizontal forehead lines, the vertical frown lines between the eyebrows and the crow's feet at the outer corners of the eyes are clearly smoothed and nearly gone; the skin there looks rested and even but still has real pores and fine texture, not plastic. Brow position and eye shape stay natural. ${KEEP}`,
   },
   lip_filler: {
     label: "Lip filler",
-    prompt: `Add modest, natural volume to the lips as after a conservative hyaluronic acid lip filler: slightly fuller upper and lower lip, a crisper vermilion border, better symmetry, no duck shape, no color change. ${KEEP}`,
+    prompt: `Edit this photo to show the full result of a well-done hyaluronic acid lip filler: the upper and lower lips are noticeably fuller and more hydrated, the cupid's bow and vermilion border are crisper, the lips are symmetric and softly projected, with no duck shape, no change in lip color, and natural lip lines still visible. ${KEEP}`,
   },
   under_eye_filler: {
     label: "Under-eye filler",
-    prompt: `Reduce the hollowness and shadow under the eyes as after a conservative tear-trough filler: the under-eye area looks smoother and less sunken, dark circles lighter, no change to the eyes themselves. ${KEEP}`,
+    prompt: `Edit this photo to show the full result of a well-done tear-trough filler: the hollows under both eyes are filled and smooth, the dark shadows are clearly lighter, the transition from lower lid to cheek is seamless, with the eyes themselves, eyelashes and eye shape unchanged. ${KEEP}`,
   },
   cheek_filler: {
     label: "Cheek filler",
-    prompt: `Restore subtle mid-face volume as after a conservative cheek filler: slightly fuller, lifted cheekbones and softer nasolabial folds, no change to the eyes, nose, lips or jaw. ${KEEP}`,
+    prompt: `Edit this photo to show the full result of a well-done cheek filler: the cheekbones are visibly fuller and gently lifted, the mid-face looks restored and youthful, and the nasolabial folds are clearly softer, with no change to the eyes, nose, lips, chin or jaw outline. ${KEEP}`,
   },
   resurfacing: {
     label: "Resurfacing (microneedling, laser)",
-    prompt: `Show the skin three months after a series of microneedling or fractional laser: finer pores, smoother texture, softer fine lines and acne scars, more even surface. Skin must still look like real skin with visible pores, not blurred or airbrushed. ${KEEP}`,
+    prompt: `Edit this photo to show the skin three months after a full series of microneedling or fractional laser resurfacing: pores visibly tighter, texture clearly smoother and more even, fine lines and acne scars markedly reduced, with the skin still looking like real skin under phone-camera light (visible pores, natural sheen), never blurred or airbrushed. ${KEEP}`,
   },
   tone: {
     label: "Tone (peel, IPL)",
-    prompt: `Show the skin six weeks after a chemical peel or IPL photofacial: sun spots and brown patches lighter, redness and visible capillaries reduced, more even tone. Texture, pores, moles and freckle placement stay exactly where they are. ${KEEP}`,
+    prompt: `Edit this photo to show the skin six weeks after a full series of chemical peels or IPL photofacials: sun spots and brown patches clearly faded, redness and visible capillaries clearly reduced, overall tone even and bright. Every mole and freckle stays exactly where it is, only lighter if it is sun damage; texture and pores unchanged. ${KEEP}`,
   },
   glow: {
     label: "Glow (facial, skincare)",
-    prompt: `Show the skin a week after a hydrating medical facial: better hydrated, slightly brighter, calmer, with a healthy natural glow. No smoothing, no filter look, pores and texture intact. ${KEEP}`,
+    prompt: `Edit this photo to show the skin one week after a professional hydrating medical facial and a prescription skincare routine: visibly better hydrated and plumper, brighter and calmer, with a healthy natural glow and more even tone, pores and texture fully intact and no filter look. ${KEEP}`,
   },
 };
 
 /** Strength words shown on the dose slider; the number is the blend amount. */
 export const DOSES = [
-  { label: "Subtle", value: 0.45 },
-  { label: "Natural", value: 0.75 },
+  { label: "Subtle", value: 0.4 },
+  { label: "Natural", value: 0.7 },
   { label: "Full", value: 1 },
 ] as const;
