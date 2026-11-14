@@ -124,7 +124,7 @@ export function Lab() {
     <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-ink-muted">Facet · internal</p>
+          <p className="text-sm text-ink-muted">Origami · internal</p>
           <h1 className="font-display mt-1 text-4xl">Bake-off lab</h1>
           <p className="mt-2 max-w-2xl text-[15px] text-ink-muted">
             Same selfie, same treatment, every configured model, side by side at 100%. Toggle raw vs. composited to see how much the mask saves.

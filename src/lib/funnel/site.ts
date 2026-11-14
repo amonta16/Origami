@@ -8,7 +8,7 @@ import { isIP } from "node:net";
  * every redirect), 8 s timeout, 1.5 MB cap. We only read pages; nothing is submitted.
  */
 const MAX_BYTES = 1_500_000;
-const UA = "Mozilla/5.0 (compatible; FacetPreviewBot/0.1; student hackathon project)";
+const UA = "Mozilla/5.0 (compatible; AtlasEnginePreviewBot/0.1; student hackathon project)";
 
 function privateV4(ip: string) {
   const [a, b] = ip.split(".").map(Number);

@@ -4,7 +4,7 @@ Fill in the bracketed parts Sunday morning. Keep the provenance paragraph verbat
 
 ## Project
 
-**Facet** — a free AI face scan any med spa can put in every patient's pocket, that turns every scan into a booked appointment and a patient who keeps coming back.
+**Origami** (by Atlas Engine; working name during the build: Facet) — a free AI face scan any med spa can put in every patient's pocket, that turns every scan into a booked appointment and a patient who keeps coming back.
 
 ## Problem and who has it
 

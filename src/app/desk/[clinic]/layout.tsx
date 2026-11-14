@@ -4,7 +4,7 @@ import { DeskSidebar } from "@/components/desk/sidebar";
 import { DeniedScreen } from "@/components/desk/frame";
 import { resolveDesk } from "@/lib/desk/access";
 
-export const metadata = { title: { default: "Front desk", template: "%s · Front desk · Facet" } };
+export const metadata = { title: { default: "Front desk", template: "%s · Front desk · Origami" } };
 
 type Props = { children: ReactNode; params: Promise<{ clinic: string }> };
 

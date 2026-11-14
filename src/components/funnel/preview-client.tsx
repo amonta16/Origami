@@ -102,7 +102,7 @@ export function BookCallButton({ slug, spaName }: { slug: string; spaName: strin
         {sent ? (
           <div>
             <p className="text-[15px] leading-relaxed text-ink-soft">
-              Thanks. A member of the Facet team will reach out to set up a 15-minute call about taking {spaName}&rsquo;s app live.
+              Thanks. A member of the Atlas Engine team will reach out to set up a 15-minute call about taking {spaName}&rsquo;s app live.
             </p>
             <Button full size="lg" className="mt-5" onClick={() => setOpen(false)}>
               Back to my app

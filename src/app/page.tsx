@@ -18,7 +18,7 @@ export default function Home() {
           <Link href="/" className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/atlas-engine-bird.png" alt="" width={32} height={32} className="size-8" />
-            <span className="font-brand-serif text-[25px] leading-none">Facet</span>
+            <span className="font-brand-serif text-[25px] leading-none">Origami</span>
           </Link>
           <Link href="/s/sample" className="rounded-[10px] bg-ink px-4 py-2.5 text-[14px] font-medium text-white hover:bg-ink-soft">
             See a sample app
@@ -70,7 +70,7 @@ export default function Home() {
       </section>
 
       <footer className="mx-auto w-full max-w-3xl px-5 pb-10 text-center text-[12px] leading-relaxed text-ink-muted sm:px-8">
-        Facet is built by Atlas Engine, a student team at the CPVC × OCOB × CPE AI Hackathon, Cal Poly, Nov 13–15, 2026. Previews are private links, built only from public website content, and labeled &ldquo;Preview&rdquo; until a spa chooses to go live.
+        Origami is built by Atlas Engine, a student team at the CPVC × OCOB × CPE AI Hackathon, Cal Poly, Nov 13–15, 2026. Previews are private links, built only from public website content, and labeled &ldquo;Preview&rdquo; until a spa chooses to go live.
       </footer>
     </main>
   );

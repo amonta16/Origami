@@ -26,7 +26,7 @@ export function ConsentScreen({ clinic, onAgree }: { clinic: Clinic; onAgree: ()
         <p className="text-[11px] font-medium tracking-[0.12em] text-brand-ink">BEFORE THE CAMERA OPENS</p>
         <h1 className="font-display mt-1 text-[24px]">Here is exactly what happens with your photo.</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
-          Facet maps your face with a live 3D mesh, scores a few cosmetic concerns and shows what a treatment could look like on you.
+          Origami maps your face with a live 3D mesh, scores a few cosmetic concerns and shows what a treatment could look like on you.
         </p>
 
         <ul className="mt-4 divide-y divide-line rounded-card border border-line bg-surface">
@@ -34,7 +34,7 @@ export function ConsentScreen({ clinic, onAgree }: { clinic: Clinic; onAgree: ()
             ["Your face is biometric data", "The scan runs on your phone. One photo goes to our servers and an AI image service to score it and render the preview."],
             ["Kept 72 hours, then deleted", "Unless you choose to keep your results. Never sold, never used to train anything, never used for anything but your scan."],
             ["Cosmetic estimates, not a diagnosis", "A clinician confirms everything in person. If something looks medical, we say so and suggest a doctor."],
-            ["Student project", "Facet is being built at the Cal Poly AI Hackathon, Nov 13–15, 2026."],
+            ["Student project", "Origami is being built at the Cal Poly AI Hackathon, Nov 13–15, 2026."],
           ].map(([t, d]) => (
             <li key={t} className="flex gap-3 p-4">
               <span aria-hidden="true" className="mt-1.5 size-1.5 shrink-0 rounded-full bg-brand" />
@@ -48,7 +48,7 @@ export function ConsentScreen({ clinic, onAgree }: { clinic: Clinic; onAgree: ()
 
         <div className="mt-4 space-y-2.5">
           <Check checked={biometric} onChange={setBiometric}>
-            I consent to Facet processing a photo of my face as described above.
+            I consent to Origami processing a photo of my face as described above.
           </Check>
           <Check checked={adult} onChange={setAdult}>
             I am 18 or older.

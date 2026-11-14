@@ -22,7 +22,7 @@ async function Content({ params }: Props) {
       <DeskHeader clinic={clinic} title="Billing" />
       <Panel>
         <EmptyState icon="card" title="Billing isn't part of this build">
-          Facet is a student hackathon project and doesn&rsquo;t charge clinics anything. There are no plans, invoices or cards on file here.
+          Origami is a student hackathon project and doesn&rsquo;t charge clinics anything. There are no plans, invoices or cards on file here.
         </EmptyState>
       </Panel>
     </DeskMain>

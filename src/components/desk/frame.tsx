@@ -101,7 +101,7 @@ export function DeniedScreen() {
             Try the sample desk
           </Link>
           <Link href="/" className="inline-flex h-10 items-center rounded-chip border border-line-strong bg-surface px-5 text-[14px] font-medium hover:border-ink">
-            Back to Facet
+            Back to Origami
           </Link>
         </div>
       </div>

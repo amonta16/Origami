@@ -43,7 +43,7 @@ async function Gate({ searchParams }: { searchParams: PageProps<"/admin">["searc
     const err = sp.error === "slow" ? "Too many tries. Wait 15 minutes." : sp.error ? "That password didn't match." : null;
     return (
       <Card>
-        <h1 className="font-display text-[20px]">Facet admin</h1>
+        <h1 className="font-display text-[20px]">Origami admin</h1>
         <p className="mt-1 text-[13px] text-ink-muted">Team only.</p>
         <form method="post" action="/api/admin/login" className="mt-5 flex flex-col gap-3">
           <label htmlFor="admin-pw" className="text-[13px] font-medium text-ink-soft">

@@ -1,4 +1,6 @@
-# Facet
+# Origami, by Atlas Engine
+
+_Working name during the build was "Facet"; the team renamed the product to Origami on Sat Nov 14, 2026. Older notes and the provenance paragraph below still say Facet; it is the same project._
 
 A free AI face scan that any med spa can put in every patient's pocket, and that turns every scan into a booked appointment and a patient who keeps coming back.
 

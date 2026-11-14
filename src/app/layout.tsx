@@ -47,8 +47,8 @@ const caveat = Caveat({
 
 export const metadata: Metadata = {
   title: {
-    default: "Facet",
-    template: "%s · Facet",
+    default: "Origami",
+    template: "%s · Origami",
   },
   description:
     "A free AI face scan for med spa patients: see what a treatment could look like on your own face, book it, and get reminded when it's time to come back.",

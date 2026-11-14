@@ -121,7 +121,7 @@ export function FlockBackground({ className }: { className?: string }) {
         ctx.save();
         ctx.translate(b.x, b.y);
         ctx.rotate(ang);
-        ctx.globalAlpha = 0.28 + b.z * 0.55;
+        ctx.globalAlpha = 0.14 + b.z * 0.3; // soft, so headlines stay crisp over them
         // body: a long folded dart, nose forward
         ctx.fillStyle = body;
         ctx.beginPath();

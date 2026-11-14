@@ -34,7 +34,7 @@ function Wordmark() {
     <span className="flex items-center gap-2">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/brand/atlas-engine-bird.png" alt="" width={28} height={28} className="size-7" />
-      <span className="font-brand-serif text-[22px]">Facet</span>
+      <span className="font-brand-serif text-[22px]">Origami</span>
     </span>
   );
 }
@@ -71,9 +71,9 @@ function HelpBox() {
   return (
     <div className="rounded-card bg-brand-soft p-4">
       <p className="text-[14px] font-medium">Need help?</p>
-      <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">Facet is a student hackathon build. Find the team at the demo table and we&rsquo;ll walk you through it.</p>
+      <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">Origami is a student hackathon build. Find the team at the demo table and we&rsquo;ll walk you through it.</p>
       <Link href="/" className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-brand">
-        How Facet works <DeskIcon name="chevron" className="size-3" />
+        How Origami works <DeskIcon name="chevron" className="size-3" />
       </Link>
     </div>
   );

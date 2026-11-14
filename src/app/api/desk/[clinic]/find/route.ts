@@ -22,7 +22,7 @@ export async function POST(req: Request, { params }: Ctx) {
       if (qr[1].toLowerCase() !== clinic.slug) return fail(400, "That QR code is for a different clinic.");
       q = qr[2];
     } else if (/^facet:/i.test(q)) {
-      return fail(400, "That QR code isn't a Facet check-in code.");
+      return fail(400, "That QR code isn't an Origami check-in code.");
     }
 
     const { data, error } = await sb

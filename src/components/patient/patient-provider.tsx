@@ -204,7 +204,7 @@ function JoinSheet({
           {welcomePoints > 0 ? `Join and get ${welcomePoints} points` : "Join"}
         </Button>
         <p className="text-center text-[11px] leading-relaxed text-ink-muted">
-          Facet is a student hackathon project. We keep your first name and number for {clinicName} only, never sell them, and never ask for payment details in the app.
+          Origami is a student hackathon project. We keep your first name and number for {clinicName} only, never sell them, and never ask for payment details in the app.
         </p>
       </form>
     </BottomSheet>

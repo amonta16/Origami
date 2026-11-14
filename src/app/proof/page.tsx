@@ -11,7 +11,7 @@ export default function ProofPage() {
     <main className="mx-auto w-full max-w-[1080px] px-4 pb-16 pt-10 md:px-8 md:pt-14">
       <p className="text-[13px] font-medium text-ink-muted">
         <Link href="/" className="hover:text-ink">
-          Facet
+          Origami
         </Link>{" "}
         · CPVC × OCOB × CPE AI Hackathon
       </p>

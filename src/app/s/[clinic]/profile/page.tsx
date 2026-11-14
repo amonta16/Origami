@@ -167,7 +167,7 @@ async function Profile({ params }: { params: PageProps<"/s/[clinic]/profile">["p
         <Link href={`${base}/legal#face-scan`} className="hover:text-ink">AI face scan notice</Link>
         <Link href={`${base}/legal#california`} className="hover:text-ink">California notice</Link>
       </nav>
-      <p className="pt-4 text-center text-[11px] text-ink-muted/70">Powered by Facet</p>
+      <p className="pt-4 text-center text-[11px] text-ink-muted/70">Powered by Origami</p>
     </PatientShell>
   );
 }

@@ -135,7 +135,7 @@ async function Preview({ params }: { params: PageProps<"/p/[slug]">["params"] })
           )}
 
           <p className="mt-10 text-[12px] leading-relaxed text-ink-muted">
-            Built from public content on your website. Photos and logo stay yours; memberships and rewards in this preview are examples you set yourself when you go live. Facet is a student project from the CPVC × OCOB × CPE AI Hackathon at Cal Poly.{" "}
+            Built from public content on your website. Photos and logo stay yours; memberships and rewards in this preview are examples you set yourself when you go live. Origami, by Atlas Engine, is a student project from the CPVC × OCOB × CPE AI Hackathon at Cal Poly.{" "}
             <Link href="/" className="underline underline-offset-2">
               Build another
             </Link>

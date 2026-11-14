@@ -36,7 +36,7 @@ export default function StyleguidePage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
       <header className="pb-8">
-        <p className="text-[13px] text-ink-muted">Facet design system</p>
+        <p className="text-[13px] text-ink-muted">Origami design system</p>
         <h1 className="font-display mt-2 max-w-3xl text-[40px] sm:text-[52px]">White, near-black, hairlines, and one clinic color.</h1>
         <p className="mt-4 max-w-2xl text-[16px] leading-relaxed text-ink-muted">
           Retuned to the team&rsquo;s disclosed design reference (see reference/REFERENCE.md). Black pill primaries, white bordered secondaries, the clinic&rsquo;s brand color for the one brand action, toggles, rings and underlines. Inter throughout. Patient screens at 390px, the desk at desktop width.

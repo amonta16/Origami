@@ -22,7 +22,7 @@ async function Content({ params }: Props) {
       <DeskHeader clinic={clinic} title="Payouts" />
       <Panel>
         <EmptyState icon="wallet" title="Payouts aren't part of this build">
-          Facet doesn&rsquo;t take card payments, so there&rsquo;s nothing to pay out. Patients ask for things in the app and pay you at the desk the way they do today.
+          Origami doesn&rsquo;t take card payments, so there&rsquo;s nothing to pay out. Patients ask for things in the app and pay you at the desk the way they do today.
         </EmptyState>
       </Panel>
     </DeskMain>
