@@ -100,7 +100,7 @@ export async function GET(req: Request) {
           headers: { "x-goog-api-key": key!, "content-type": "application/json" },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: "Reply with the single word ok." }] }],
-            generationConfig: { max_output_tokens: 64, ...(noThink ? { thinkingConfig: { thinkingBudget: 0 } } : {}) },
+            generationConfig: { max_output_tokens: 512,...(noThink ? { thinkingConfig: { thinkingBudget: 0 } } : {}) },
           }),
           signal,
         });

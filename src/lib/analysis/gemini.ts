@@ -41,7 +41,9 @@ export async function geminiStructured<T>(args: {
         response_mime_type: "application/json",
         response_json_schema: args.schema,
         temperature: 0.4,
-        max_output_tokens: 4000,
+        // Thinking tokens count against this cap on Gemini 3 (a one-word probe spent 60 on thought),
+        // so leave generous room or the JSON gets cut off mid-object.
+        max_output_tokens: 16000,
       },
     }),
   });
@@ -53,7 +55,9 @@ export async function geminiStructured<T>(args: {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };
   if (!res.ok) throw new Error(json.error?.message || `Gemini error ${res.status}`);
-  const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-  if (!text) throw new Error("Gemini returned no text");
+  const cand = json.candidates?.[0] as { finishReason?: string; content?: { parts?: Array<{ text?: string }> } } | undefined;
+  const text = cand?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+  if (cand?.finishReason === "MAX_TOKENS") throw new Error("Gemini ran out of output tokens before finishing the analysis");
+  if (!text) throw new Error(`Gemini returned no text${cand?.finishReason ? ` (${cand.finishReason})` : ""}`);
   return { data: JSON.parse(text) as T, model: json.modelVersion ?? GEMINI_VISION_MODEL, usage: json.usageMetadata };
 }
