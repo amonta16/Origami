@@ -153,6 +153,14 @@ input[type="range"] {
   accent-color: var(--brand);
 }
 
+/* Patient app screens scroll like a native app: no desktop scrollbar (also inside the preview phone frame). */
+html:has(.patient-app) {
+  scrollbar-width: none;
+}
+html:has(.patient-app)::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -57,6 +57,15 @@ async function Profile({ params }: { params: PageProps<"/s/[clinic]/profile">["p
     <PatientShell clinic={clinic} patient={patient} active="profile" title="Profile">
       {/* identity card */}
       <section className="px-3 pt-2">
+        {!patient ? (
+          <div className="rounded-card border border-line bg-surface p-5 shadow-soft">
+            <h1 className="font-display text-[19px]">Sign in to {clinic.name}</h1>
+            <p className="mt-1.5 text-[13px] leading-snug text-ink-muted">Earn points every visit, join a membership and book in seconds.</p>
+            <JoinButton full size="lg" className="mt-4" reason="Your card holds your points, rewards and check-in code.">
+              Sign up or log in
+            </JoinButton>
+          </div>
+        ) : (
         <div className="rounded-card border border-line bg-surface p-4 shadow-soft">
           <div className="flex items-center gap-3">
             <span className="grid size-12 shrink-0 place-items-center rounded-full bg-ink text-[18px] font-medium text-white">
@@ -78,12 +87,9 @@ async function Profile({ params }: { params: PageProps<"/s/[clinic]/profile">["p
                 <p className="mt-0.5 truncate text-[16px] font-medium">{patient.plan?.name ?? "Not a member"}</p>
               </div>
             </div>
-          ) : (
-            <JoinButton full size="md" className="mt-4" reason="Your card holds your points, rewards and check-in code.">
-              Join {clinic.name}
-            </JoinButton>
-          )}
+          ) : null}
         </div>
+        )}
       </section>
 
       {/* rows */}
@@ -161,6 +167,7 @@ async function Profile({ params }: { params: PageProps<"/s/[clinic]/profile">["p
         <Link href={`${base}/legal#face-scan`} className="hover:text-ink">AI face scan notice</Link>
         <Link href={`${base}/legal#california`} className="hover:text-ink">California notice</Link>
       </nav>
+      <p className="pt-4 text-center text-[11px] text-ink-muted/70">Powered by Facet</p>
     </PatientShell>
   );
 }

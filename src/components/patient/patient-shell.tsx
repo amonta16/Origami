@@ -16,6 +16,7 @@ export function PatientShell({
   patient,
   active,
   title,
+  back,
   children,
 }: {
   clinic: Clinic;
@@ -23,6 +24,8 @@ export function PatientShell({
   active: TabKey;
   /** inner screens show a title like "Shop"; home shows the clinic mark */
   title?: string;
+  /** detail screens: "‹ Back" on the left, a centered title */
+  back?: { href: string; title: string };
   children: React.ReactNode;
 }) {
   const base = `/s/${clinic.slug}`;
@@ -36,15 +39,33 @@ export function PatientShell({
         signedIn={Boolean(patient)}
         isMember={Boolean(patient?.plan)}
       >
-        <div className="mx-auto w-full max-w-phone pb-28">
-          <AppBar
+        <div className="patient-app mx-auto w-full max-w-phone pb-28">
+          {clinic.is_preview && (
+            <div className="bg-[#111318] py-1 text-center text-[11px] font-medium text-white">Preview · not live yet</div>
+          )}
+          {back && (
+            <div className="flex h-12 items-center justify-between px-3">
+              <Link href={back.href} className="flex items-center gap-1 rounded-chip px-2 py-1.5 text-[13px] text-ink-soft hover:bg-surface-muted">
+                <Icon name="chevron" className="size-4 rotate-180" /> Back
+              </Link>
+              <span className="text-[15px] font-medium">{back.title}</span>
+              <span className="flex items-center">
+                <Link href={`${base}/shop?tab=treatments`} aria-label="Search treatments" className="grid size-9 place-items-center rounded-full hover:bg-surface-muted">
+                  <Icon name="search" className="size-[20px]" />
+                </Link>
+                <Link href={`${base}/profile#requests`} aria-label="My requests" className="grid size-9 place-items-center rounded-full hover:bg-surface-muted">
+                  <Icon name="bag" className="size-[20px]" />
+                </Link>
+              </span>
+            </div>
+          )}
+          {!back && <AppBar
             title={title ?? clinic.name}
             logoUrl={title ? null : clinic.logo_url}
             className={title ? "[&_span.font-display]:text-[20px]" : undefined}
             right={
               <>
                 {clinic.is_sample && <Chip className="mr-1 h-6 text-[11px]">Sample clinic</Chip>}
-                {clinic.is_preview && <Chip tone="brand" className="mr-1 h-6 text-[11px]">Preview</Chip>}
                 <Link href={`${base}/shop?tab=treatments`} aria-label="Search treatments" className="grid size-10 place-items-center rounded-full hover:bg-surface-muted">
                   <Icon name="search" className="size-[21px]" />
                 </Link>
@@ -58,7 +79,7 @@ export function PatientShell({
                 </Link>
               </>
             }
-          />
+          />}
           {children}
         </div>
         <TabBar active={active} base={base} />

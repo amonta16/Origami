@@ -66,6 +66,49 @@ export function RedeemButton({ rewardId, rewardName, cost, points }: { rewardId:
   );
 }
 
+/** Full-width black "Book now" / "Subscribe now" on detail pages. Sends a request; joins first if needed. */
+export function RequestButton({ kind, itemId, label, sentNote }: { kind: "treatment" | "product" | "membership"; itemId: string; label: string; sentNote: string }) {
+  const { clinicSlug, clinicName, signedIn, openJoin } = usePatient();
+  const router = useRouter();
+  const [state, setState] = React.useState<"idle" | "busy" | "sent">("idle");
+  const [error, setError] = React.useState<string | null>(null);
+  const send = async () => {
+    if (!signedIn) return openJoin("Join so the front desk knows who's asking. Then tap again to send.");
+    setState("busy");
+    setError(null);
+    try {
+      const res = await fetch("/api/patient/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ clinicSlug, kind, itemId }) });
+      const j = await res.json();
+      if (res.status === 401) {
+        setState("idle");
+        return openJoin();
+      }
+      if (!res.ok) throw new Error(j.error || "Couldn't send.");
+      setState("sent");
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't send.");
+      setState("idle");
+    }
+  };
+  if (state === "sent") {
+    return (
+      <div className="rounded-card bg-brand-soft p-4 text-[14px] leading-snug text-brand-ink">
+        <p className="font-medium">Sent to {clinicName}.</p>
+        <p className="mt-0.5">{sentNote}</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <Button full size="lg" loading={state === "busy"} onClick={send}>
+        {label}
+      </Button>
+      {error && <p role="alert" className="mt-2 text-center text-[12px] text-danger">{error}</p>}
+    </div>
+  );
+}
+
 export function ShowCodeButton({ title, code, note, label = "Show" }: { title: string; code: string; note?: string; label?: string }) {
   const { showCode } = usePatient();
   return (

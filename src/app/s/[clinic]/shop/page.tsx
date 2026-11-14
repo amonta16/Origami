@@ -5,7 +5,7 @@ import { PatientShell, SectionTitle, TopTabs } from "@/components/patient/patien
 import { ItemButton } from "@/components/patient/patient-provider";
 import { ItemArt } from "@/components/patient/item-art";
 import { CATEGORY_LABEL, Icon, type IconName } from "@/components/patient/icons";
-import { planItem, productItem, treatmentIcon, treatmentItem } from "@/components/patient/sheet-items";
+import { productItem, treatmentIcon } from "@/components/patient/sheet-items";
 import { getTreatments } from "@/lib/data/clinics";
 import { getPlans, getProducts } from "@/lib/data/catalog";
 import { loadPatientPage } from "@/lib/patient/load";
@@ -47,9 +47,10 @@ async function Shop({ params, searchParams }: Pick<PageProps<"/s/[clinic]/shop">
         ]}
       />
       {tab === "browse" && <Browse base={base} treatments={treatments} products={products} hasPlans={plans.length > 0} href={href} />}
-      {tab === "memberships" && <Memberships plans={plans} currentPlanId={patient?.plan?.id ?? null} clinicName={clinic.name} />}
+      {tab === "memberships" && <Memberships plans={plans} currentPlanId={patient?.plan?.id ?? null} clinicName={clinic.name} base={base} photo={clinic.hero_photo_url ?? null} />}
       {tab === "treatments" && (
         <Treatments
+          base={base}
           treatments={treatments}
           cat={typeof sp.cat === "string" ? (sp.cat as TreatmentCategory) : undefined}
           sort={sp.sort === "price-asc" || sp.sort === "price-desc" ? sp.sort : "popular"}
@@ -102,12 +103,10 @@ function Browse({
       )}
 
       {cats.length > 0 && (
-        <section className="grid grid-cols-4 gap-y-4 px-3 pt-6">
+        <section className="grid grid-cols-3 gap-y-4 px-3 pt-6">
           {cats.map((c) => (
             <Link key={c} href={href({ tab: "treatments", cat: c })} className="flex flex-col items-center gap-1.5 rounded-field py-1 text-[12px] text-ink-soft hover:text-ink">
-              <span className="grid size-12 place-items-center rounded-full bg-surface-muted text-ink">
-                <Icon name={c as IconName} className="size-[22px]" />
-              </span>
+              <Icon name={c as IconName} className="size-[26px] text-ink" strokeWidth={1.4} />
               {CATEGORY_LABEL[c]}
             </Link>
           ))}
@@ -119,11 +118,11 @@ function Browse({
           <SectionTitle action={<Link href={href({ tab: "treatments" })} className="text-[13px] text-ink-muted hover:text-ink">All treatments</Link>}>Most booked</SectionTitle>
           <div className="mt-3 grid grid-cols-2 gap-x-2.5 gap-y-5">
             {popular.map((t) => (
-              <ItemButton key={t.id} item={treatmentItem(t)}>
-                <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} />
+              <Link key={t.id} href={`${base}/t/${t.id}`} className="block">
+                <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[4/5]" />
                 <p className="mt-2 truncate px-0.5 text-[13px]">{t.name}</p>
-                <p className="px-0.5 text-[13px] font-medium">{money(t.price_cents, { from: true })}</p>
-              </ItemButton>
+                <p className="px-0.5 text-[12px] font-medium">{t.price_cents != null ? money(t.price_cents, { from: true }) : "Price on consultation"}</p>
+              </Link>
             ))}
           </div>
         </section>
@@ -165,53 +164,45 @@ function Browse({
 
 /* ---------------------------------------------------------- Memberships */
 
-function Memberships({ plans, currentPlanId, clinicName }: { plans: Awaited<ReturnType<typeof getPlans>>; currentPlanId: string | null; clinicName: string }) {
+function Memberships({
+  plans,
+  currentPlanId,
+  clinicName,
+  base,
+  photo,
+}: {
+  plans: Awaited<ReturnType<typeof getPlans>>;
+  currentPlanId: string | null;
+  clinicName: string;
+  base: string;
+  photo: string | null;
+}) {
   if (!plans.length) {
     return <p className="px-6 pt-16 text-center text-[14px] text-ink-muted">{clinicName} doesn&rsquo;t offer memberships yet.</p>;
   }
   return (
-    <div className="flex flex-col gap-3 px-3 pt-4">
-      <p className="px-1 text-[14px] leading-snug text-ink-muted">
-        One monthly price, a treatment included, and member prices on everything else. Cancel anytime with the front desk.
-      </p>
-      {plans.map((m, i) => {
-        const current = m.id === currentPlanId;
-        const featured = !currentPlanId && i === 1;
-        return (
-          <article key={m.id} className={current || featured ? "rounded-card border-2 border-ink bg-surface p-5" : "rounded-card border border-line bg-surface p-5"}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="font-display text-[20px]">{m.name}</h3>
-                {m.tagline && <p className="mt-1 text-[13px] leading-snug text-ink-muted">{m.tagline}</p>}
+    <div className="px-3 pt-4">
+      <ul className="grid grid-cols-2 gap-x-2.5 gap-y-5">
+        {plans.map((m) => (
+          <li key={m.id}>
+            <Link href={`${base}/m/${m.id}`} className="block">
+              <div className="relative grid aspect-square place-items-center overflow-hidden rounded-card bg-ink">
+                {photo && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55 grayscale" />
+                )}
+                <span aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_100%,rgba(255,255,255,.18),transparent_70%)]" />
+                <span className="relative px-3 text-center text-[13px] font-semibold uppercase leading-tight tracking-[0.12em] text-white">{m.name}</span>
+                {m.id === currentPlanId && <Chip tone="brand" className="absolute left-2 top-2 h-5 text-[10px]">Your plan</Chip>}
               </div>
-              {current ? <Chip tone="brand" className="h-6 shrink-0 text-[11px]">Your plan</Chip> : featured ? <Chip tone="ink" className="h-6 shrink-0 text-[11px]">Most chosen</Chip> : null}
-            </div>
-            <p className="mt-4">
-              <span className="font-display-numeral text-[30px]">{money(m.monthly_price_cents)}</span>
-              <span className="text-[14px] text-ink-muted"> /month</span>
-            </p>
-            <ul className="mt-4 flex flex-col gap-2.5">
-              {m.perks.map((p) => (
-                <li key={p} className="flex gap-2.5 text-[14px] leading-snug">
-                  <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
-                    <Icon name="check" className="size-3.5" strokeWidth={2.2} />
-                  </span>
-                  {p}
-                </li>
-              ))}
-            </ul>
-            {!current && (
-              <ItemButton item={planItem(m)} className="mt-5 block w-full">
-                <span className={featured ? "flex h-11 w-full items-center justify-center rounded-chip bg-ink text-[14px] font-medium text-white" : "flex h-11 w-full items-center justify-center rounded-chip border border-line-strong text-[14px] font-medium"}>
-                  Choose {m.name}
-                </span>
-              </ItemButton>
-            )}
-          </article>
-        );
-      })}
-      <p className="px-2 pb-2 pt-1 text-center text-[11px] leading-relaxed text-ink-muted">
-        Choosing a plan sends a request. {clinicName} sets up billing with you in person; nothing is charged in the app.
+              <p className="mt-2 line-clamp-2 px-0.5 text-[13px] leading-snug">{m.name}</p>
+              <p className="px-0.5 text-[12px] font-medium">{money(m.monthly_price_cents)}/month</p>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="px-2 pb-2 pt-6 text-center text-[11px] leading-relaxed text-ink-muted">
+        Memberships are set up with the front desk. Nothing is charged in the app.
       </p>
     </div>
   );
@@ -220,12 +211,14 @@ function Memberships({ plans, currentPlanId, clinicName }: { plans: Awaited<Retu
 /* ----------------------------------------------------------- Treatments */
 
 function Treatments({
+  base,
   treatments,
   cat,
   sort,
   isMember,
   href,
 }: {
+  base: string;
   treatments: Treatment[];
   cat?: TreatmentCategory;
   sort: Sort;
@@ -278,7 +271,7 @@ function Treatments({
       <ul className="flex flex-col gap-7 px-3 pt-4">
         {list.map((t) => (
           <li key={t.id}>
-            <ItemButton item={treatmentItem(t)}>
+            <Link href={`${base}/t/${t.id}`} className="block">
               <ItemArt src={t.image_url} icon={treatmentIcon(t)} alt={t.name} className="aspect-[16/9]" />
               <div className="px-1 pt-3">
                 <Chip className="h-6 text-[10px] font-semibold tracking-[0.08em]">TREATMENT</Chip>
@@ -302,7 +295,7 @@ function Treatments({
                   )}
                 </p>
               </div>
-            </ItemButton>
+            </Link>
           </li>
         ))}
       </ul>

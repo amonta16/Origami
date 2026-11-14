@@ -42,6 +42,18 @@ export async function getRewards(clinicId: string): Promise<Reward[]> {
   return (data as Reward[]) ?? [];
 }
 
+export async function getPlan(clinicId: string, id: string): Promise<(MembershipPlan & { is_example?: boolean }) | null> {
+  const sb = supabaseAdmin();
+  if (!sb || !/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const { data } = await sb
+    .from("membership_plans")
+    .select("id, clinic_id, name, tagline, monthly_price_cents, perks, member_discount_pct, monthly_points, sort, is_example")
+    .eq("clinic_id", clinicId)
+    .eq("id", id)
+    .maybeSingle();
+  return (data as (MembershipPlan & { is_example?: boolean }) | null) ?? null;
+}
+
 /** Full patient view for the app, or null if the lead is gone. */
 export async function getPatient(clinicId: string, leadId: string): Promise<Patient | null> {
   const sb = supabaseAdmin();

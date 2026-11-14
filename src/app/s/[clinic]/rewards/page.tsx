@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Chip } from "@/components/ui";
 import { PatientShell, SectionTitle } from "@/components/patient/patient-shell";
-import { JoinButton } from "@/components/patient/patient-provider";
+import { JoinTrigger } from "@/components/patient/patient-provider";
 import { RedeemButton, ShowCodeButton } from "@/components/patient/actions";
 import { ItemArt } from "@/components/patient/item-art";
 import { Icon } from "@/components/patient/icons";
@@ -26,10 +26,10 @@ async function Rewards({ params }: { params: PageProps<"/s/[clinic]/rewards">["p
   const next = rewards.find((r) => r.points_cost > points);
   const ready = patient?.redemptions.filter((r) => !r.used_at) ?? [];
 
-  const earn = [
-    { label: "Join the app", pts: clinic.welcome_points ?? 100, icon: "sparkle" as const },
-    { label: "Check in at a visit", pts: clinic.visit_points ?? 50, icon: "qr" as const },
-    ...(clinic.points_per_dollar ? [{ label: "Every $1 you spend in the clinic", pts: clinic.points_per_dollar, icon: "receipt" as const }] : []),
+  const earn: Array<{ label: string; sub?: string; pts: number; icon: "sparkle" | "qr" | "bag" }> = [
+    { label: "Join the app", sub: "Once, when you sign up", pts: clinic.welcome_points ?? 100, icon: "sparkle" as const },
+    { label: "Visit our clinic", sub: "Show your code at check-in", pts: clinic.visit_points ?? 50, icon: "qr" as const },
+    ...(clinic.points_per_dollar ? [{ label: "Make a purchase", sub: `${clinic.points_per_dollar} point per $1 spent`, pts: clinic.points_per_dollar, icon: "bag" as const }] : []),
   ].filter((e) => e.pts > 0);
 
   return (
@@ -41,28 +41,28 @@ async function Rewards({ params }: { params: PageProps<"/s/[clinic]/rewards">["p
           <div className="relative flex h-full flex-col">
             <p className="font-display-numeral text-[40px]">{points.toLocaleString()}</p>
             <p className="text-[13px] text-white/85">{clinic.name} points</p>
-            <div className="mt-auto">
-              <p className="text-[14px] font-medium">{patient?.first_name ?? "Your name here"}</p>
-              <p className="mt-1 text-[11px] font-semibold tracking-[0.2em]">{clinic.name.toUpperCase()}</p>
+            <div className="mt-auto flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[14px] font-medium">{patient?.first_name ?? "Guest"}</p>
+                <p className="mt-1 truncate text-[11px] font-semibold tracking-[0.2em]">{clinic.name.toUpperCase()}</p>
+              </div>
+              {!patient && (
+                <JoinTrigger reason="Your card collects points at every visit." className="h-8 shrink-0 rounded-chip bg-white px-4 text-[12px] font-medium text-ink shadow-soft">
+                  Sign in
+                </JoinTrigger>
+              )}
             </div>
           </div>
         </div>
         <p className="mt-2.5 text-center text-[13px] text-ink-muted">
           {!patient
-            ? "Join to start your card."
+            ? `Sign in to start your card with ${clinic.welcome_points ?? 100} points.`
             : next
               ? `${(next.points_cost - points).toLocaleString()} points to ${next.name}`
               : rewards.length
                 ? "You can redeem any reward below."
                 : null}
         </p>
-        {!patient && (
-          <div className="mt-3 flex justify-center">
-            <JoinButton size="md" reason="Your card collects points at every visit.">
-              Join and get {clinic.welcome_points ?? 100} points
-            </JoinButton>
-          </div>
-        )}
       </section>
 
       {/* ready to use */}
@@ -134,8 +134,13 @@ async function Rewards({ params }: { params: PageProps<"/s/[clinic]/rewards">["p
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-surface-muted">
                   <Icon name={e.icon} className="size-[18px]" />
                 </span>
-                <span className="text-[14px]">{e.label}</span>
-                <span className="ml-auto text-[14px] font-medium">+{e.pts}</span>
+                <span className="min-w-0">
+                  <span className="block text-[14px]">{e.label}</span>
+                  {e.sub && <span className="block text-[12px] text-ink-muted">{e.sub}</span>}
+                </span>
+                <span className="ml-auto shrink-0 rounded-chip bg-ink px-2.5 py-1 text-[11px] font-semibold text-white">
+                  +{e.pts} {e.pts === 1 ? "point" : "points"}
+                </span>
               </li>
             ))}
           </ul>

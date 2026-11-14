@@ -19,6 +19,11 @@ export type Clinic = {
   referral_points?: number;
   scan_points?: number;
   points_per_dollar?: number;
+  /** owner funnel (migration 0450) */
+  about?: string | null;
+  city?: string | null;
+  source_url?: string | null;
+  built_at?: string | null;
 };
 
 export type TreatmentCategory = "injectables" | "skin" | "laser" | "body" | "wellness" | "consult";

@@ -86,7 +86,7 @@ export function TabBar({
     { key: "shop", href: `${base}/shop`, label: "Shop" },
     // Center tab is the front-desk check-in code, as in the reference; the AI face scan
     // is the hero card on Home and is linked from the check-in screen too.
-    { key: "scan", href: `${base}/visit`, label: "Check in" },
+    { key: "scan", href: `${base}/visit`, label: "Scan" },
     { key: "rewards", href: `${base}/rewards`, label: "Rewards" },
     { key: "profile", href: `${base}/profile`, label: "Profile" },
   ];
@@ -112,15 +112,16 @@ export function TabBar({
               {enabled ? (
                 <Link
                   href={t.href}
-                  aria-label={t.label}
                   aria-current={on ? "page" : undefined}
-                  className={cn("grid size-11 place-items-center rounded-full", on ? "text-ink" : "text-ink-muted/70 hover:text-ink")}
+                  className={cn("flex w-14 flex-col items-center gap-0.5 rounded-field py-1", on ? "text-ink" : "text-ink-muted/70 hover:text-ink")}
                 >
                   {icon}
+                  <span className={cn("text-[10px] leading-none", on && "font-medium")}>{t.label}</span>
                 </Link>
               ) : (
-                <span aria-label={`${t.label} (coming soon)`} className="grid size-11 place-items-center text-ink-muted/35">
+                <span aria-label={`${t.label} (coming soon)`} className="flex w-14 flex-col items-center gap-0.5 py-1 text-ink-muted/35">
                   {icon}
+                  <span className="text-[10px] leading-none">{t.label}</span>
                 </span>
               )}
             </li>
