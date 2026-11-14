@@ -9,14 +9,22 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  */
 let cached: SupabaseClient | null | undefined;
 
+/** Env values pasted into dashboards often carry a trailing newline or space; strip it. */
+export function supabaseEnv() {
+  return {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || "",
+    key: process.env.SUPABASE_SECRET_KEY?.trim() || "",
+  };
+}
+
 export function isSupabaseConfigured() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SECRET_KEY);
+  const { url, key } = supabaseEnv();
+  return Boolean(url && key);
 }
 
 export function supabaseAdmin(): SupabaseClient | null {
   if (cached !== undefined) return cached;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SECRET_KEY;
+  const { url, key } = supabaseEnv();
   if (!url || !key) {
     cached = null;
     return cached;

@@ -5,7 +5,7 @@ import { openaiStructured, OPENAI_VISION_MODEL } from "@/lib/analysis/openai";
 import { geminiStructured, GEMINI_VISION_MODEL } from "@/lib/analysis/gemini";
 import { severityFromScore } from "@/lib/concerns";
 import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase/server";
+import { isSupabaseConfigured, supabaseAdmin, supabaseEnv } from "@/lib/supabase/server";
 import type { ScanResults } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -162,9 +162,17 @@ export async function GET(req: Request) {
 
   // Raw PostgREST call with the same key, bypassing supabase-js, to tell a key problem from a client problem.
   const probeSupabaseRaw = async () => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SECRET_KEY;
+    const rawKey = process.env.SUPABASE_SECRET_KEY ?? "";
+    const { url, key } = supabaseEnv();
     if (!url || !key) return;
+    // Shape only, never the value: length and whether the pasted value carried whitespace.
+    out.supabaseKeyShape = {
+      rawLength: rawKey.length,
+      trimmedLength: key.length,
+      hadOuterWhitespace: rawKey !== key,
+      hasInnerWhitespace: /\s/.test(key),
+      hasQuotes: /^["']|["']$/.test(key),
+    };
     const t0 = Date.now();
     try {
       const res = await fetch(`${url}/rest/v1/clinics?select=id&limit=1`, {
