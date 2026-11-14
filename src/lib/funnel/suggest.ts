@@ -27,16 +27,32 @@ function remember<T>(map: Map<string, { at: number } & T>, key: string, value: O
   map.set(key, { at: Date.now(), ...value } as { at: number } & T);
 }
 
+/** Resolves to `fallback` if `p` hasn't settled in `ms` (DNS and redirect hops have no limit of their own). */
+function deadline<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(fallback), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      () => {
+        clearTimeout(t);
+        resolve(fallback);
+      },
+    );
+  });
+}
+
 async function readSite(u: URL): Promise<SiteFacts | null> {
   const key = u.hostname.replace(/^www\./, "");
   const hit = siteCache.get(key);
   if (hit && Date.now() - hit.at < TTL) return hit.facts;
-  let facts: SiteFacts | null = null;
-  try {
-    facts = extractFacts(await fetchPage(u, 3500));
-  } catch {
-    facts = null;
-  }
+  const facts = await deadline(
+    fetchPage(u, 3000).then((page) => extractFacts(page)),
+    4000,
+    null,
+  );
   remember(siteCache, key, { facts });
   return facts;
 }
@@ -64,9 +80,10 @@ async function propose(q: string): Promise<Array<{ name: string; city: string; s
     },
     required: ["spas"],
   };
+  type Out = { spas: Array<{ name: string; city: string; state: string; website: string }> };
   for (const model of MODELS) {
     try {
-      const out = await geminiStructured<{ spas: Array<{ name: string; city: string; state: string; website: string }> }>({
+      const out = await deadline<{ data: Out } | null>(geminiStructured<Out>({
         model,
         noFallback: true,
         system:
@@ -75,8 +92,8 @@ async function propose(q: string): Promise<Array<{ name: string; city: string; s
         images: [],
         schema,
         temperature: 0,
-      });
-      return out.data.spas ?? [];
+      }), 6000, null);
+      if (out) return out.data.spas ?? [];
     } catch {
       // quota or overload on this model; try the next light one
     }
@@ -92,7 +109,9 @@ export async function suggestSpas(raw: string): Promise<SpaSuggestion[]> {
 
   // Typed a website? Check just that.
   const direct = /^[^\s]+\.[a-z]{2,}(\/\S*)?$/i.test(q) ? normalizeUrl(q) : null;
+  const t0 = Date.now();
   const proposals = direct ? [{ name: "", city: "", state: "", website: direct.toString() }] : await propose(q);
+  const t1 = Date.now();
 
   const seen = new Set<string>();
   const candidates = proposals
@@ -124,6 +143,7 @@ export async function suggestSpas(raw: string): Promise<SpaSuggestion[]> {
   );
   // two proposed domains can redirect to the same site; keep the first (most likely) name
   const list = checked.filter((x, i, arr): x is SpaSuggestion => Boolean(x) && arr.findIndex((y) => y?.host === x!.host) === i).slice(0, 5);
+  console.info(`suggest: ${proposals.length} proposed in ${t1 - t0} ms, ${list.length} verified in ${Date.now() - t1} ms`);
   remember(cache, key, { list });
   return list;
 }
