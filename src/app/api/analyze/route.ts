@@ -55,7 +55,33 @@ export async function GET(req: Request) {
 
   // Each probe gets its own 15 s budget and they run in parallel, so a hang is reported by name
   // instead of taking the whole function down with FUNCTION_INVOCATION_TIMEOUT.
-  const PROBE_MS = 15_000;
+  const PROBE_MS = 25_000;
+
+  // Gemini only: is the key accepted at all, and does the model id exist? (cheap GET, no generation)
+  const probeGeminiModels = async () => {
+    if (provider !== "gemini") return;
+    const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    const t0 = Date.now();
+    try {
+      const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+        headers: { "x-goog-api-key": key! },
+        signal: AbortSignal.timeout(PROBE_MS),
+      });
+      const json = (await res.json()) as { error?: { message?: string; status?: string }; models?: Array<{ name: string }> };
+      const names = (json.models ?? []).map((m) => m.name.replace(/^models\//, ""));
+      out.geminiModels = {
+        ok: res.ok,
+        status: res.status,
+        error: json.error?.message ?? null,
+        hasConfiguredModel: names.includes(GEMINI_VISION_MODEL),
+        count: names.length,
+        sample: names.filter((n) => n.startsWith("gemini")).slice(0, 12),
+        ms: Date.now() - t0,
+      };
+    } catch (e) {
+      out.geminiModels = { ok: false, error: e instanceof Error ? `${e.name}: ${e.message}` : String(e), ms: Date.now() - t0 };
+    }
+  };
 
   const probeProvider = async () => {
     if (!provider) return;
@@ -102,18 +128,50 @@ export async function GET(req: Request) {
     if (!sb) return;
     const t0 = Date.now();
     try {
-      const { count, error } = await sb
+      const { count, error, status, statusText } = await sb
         .from("clinics")
         .select("id", { count: "exact", head: true })
         .abortSignal(AbortSignal.timeout(PROBE_MS));
-      out.supabase = { configured: true, ok: !error, clinics: count ?? null, error: error?.message ?? null, ms: Date.now() - t0 };
+      out.supabase = {
+        configured: true,
+        ok: !error,
+        clinics: count ?? null,
+        status,
+        statusText,
+        error: error ? { message: error.message, code: error.code, details: error.details, hint: error.hint } : null,
+        ms: Date.now() - t0,
+      };
     } catch (e) {
       const msg = e instanceof Error ? (e.name === "TimeoutError" ? `no answer in ${PROBE_MS / 1000}s` : e.message) : String(e);
       out.supabase = { configured: true, ok: false, error: msg, ms: Date.now() - t0 };
     }
   };
 
-  await Promise.all([probeProvider(), probeSupabase()]);
+  // Raw PostgREST call with the same key, bypassing supabase-js, to tell a key problem from a client problem.
+  const probeSupabaseRaw = async () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SECRET_KEY;
+    if (!url || !key) return;
+    const t0 = Date.now();
+    try {
+      const res = await fetch(`${url}/rest/v1/clinics?select=id&limit=1`, {
+        headers: { apikey: key, authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(PROBE_MS),
+      });
+      const text = await res.text();
+      out.supabaseRaw = {
+        status: res.status,
+        ok: res.ok,
+        keyShape: key.startsWith("sb_secret_") ? "sb_secret" : key.startsWith("sb_publishable_") ? "sb_publishable (wrong: that is the public key)" : key.startsWith("eyJ") ? "legacy jwt" : "unknown",
+        body: text.slice(0, 200),
+        ms: Date.now() - t0,
+      };
+    } catch (e) {
+      out.supabaseRaw = { ok: false, error: e instanceof Error ? `${e.name}: ${e.message}` : String(e), ms: Date.now() - t0 };
+    }
+  };
+
+  await Promise.all([probeGeminiModels(), probeProvider(), probeSupabase(), probeSupabaseRaw()]);
   return NextResponse.json(out);
 }
 
