@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { analysisSchema, analysisSchemaGemini } from "@/lib/analysis/schema";
 import { analysisSystemPrompt, analysisUserPrompt } from "@/lib/analysis/prompt";
 import { openaiStructured, OPENAI_VISION_MODEL } from "@/lib/analysis/openai";
+import { analysisModel } from "@/lib/analysis/models";
 import { geminiStructured, GEMINI_VISION_MODEL } from "@/lib/analysis/gemini";
 import { severityFromScore } from "@/lib/concerns";
 import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
@@ -27,6 +28,12 @@ type Body = {
   firstName?: string | null;
   answers?: Record<string, unknown> | null;
   leadId?: string | null;
+  /** tester model pick (ANALYSIS_MODELS id) */
+  model?: string;
+  /** client-generated id for one captured photo; groups model runs in scan_runs */
+  session?: string;
+  /** true when re-running the same photo with another model */
+  rerun?: boolean;
 };
 
 /** Which analysis provider the server would use right now, from env alone. */
@@ -239,6 +246,14 @@ export async function POST(req: Request) {
   const images = [body.photo, ...crops.map((c) => c.dataUrl)];
   const ids = treatments.map((t) => t.id);
 
+  // Tester-picked model (results screen "Model" buttons): runs alone, no silent fallback.
+  const picked = analysisModel(body.model);
+  if (body.model && !picked) return NextResponse.json({ error: "Unknown model" }, { status: 400 });
+  if (picked?.provider === "openai" && !process.env.OPENAI_API_KEY) {
+    return NextResponse.json({ error: "OpenAI isn't configured on the server yet." }, { status: 503 });
+  }
+  const session = typeof body.session === "string" ? body.session.slice(0, 64) : null;
+
   const runWith = async (p: "openai" | "gemini"): Promise<{ raw: Raw; model: string }> => {
     if (p === "openai") {
       const out = await openaiStructured<Raw>({
@@ -247,6 +262,7 @@ export async function POST(req: Request) {
         images,
         schemaName: "skin_analysis",
         schema: analysisSchema(ids) as unknown as Record<string, unknown>,
+        model: picked?.provider === "openai" ? picked.id : undefined,
       });
       return { raw: out.data, model: out.model };
     }
@@ -255,6 +271,8 @@ export async function POST(req: Request) {
       user,
       images,
       schema: analysisSchemaGemini(ids) as unknown as Record<string, unknown>,
+      model: picked?.provider === "gemini" ? picked.id : undefined,
+      noFallback: Boolean(picked),
     });
     return {
       raw: {
@@ -271,8 +289,8 @@ export async function POST(req: Request) {
   const other: "openai" | "gemini" = provider === "openai" ? "gemini" : "openai";
   const otherConfigured =
     other === "openai" ? Boolean(process.env.OPENAI_API_KEY) : Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
-  const chain = otherConfigured ? [provider, other] : [provider];
-  let used: "openai" | "gemini" = provider;
+  const chain = picked ? [picked.provider] : otherConfigured ? [provider, other] : [provider];
+  let used: "openai" | "gemini" = chain[0];
   const failures: Array<{ provider: string; error: string }> = [];
   for (const p of chain) {
     try {
@@ -287,8 +305,19 @@ export async function POST(req: Request) {
       failures.push({ provider: p, error });
     }
   }
+  const sbLog = supabaseAdmin();
+  const logRun = (row: Record<string, unknown>) =>
+    session && sbLog
+      ? sbLog
+          .from("scan_runs")
+          .insert({ clinic_id: clinic.id, session_id: session, kind: "analysis", model_requested: picked?.id ?? null, ms: Date.now() - t0, ...row })
+          .then(({ error }) => error && console.warn("scan_runs insert failed", error.message))
+      : Promise.resolve();
+
   if (!raw) {
-    return NextResponse.json({ error: failures[failures.length - 1].error, failures }, { status: 502 });
+    const last = failures[failures.length - 1];
+    await logRun({ provider: last.provider, ok: false, error: last.error.slice(0, 500) });
+    return NextResponse.json({ error: last.error, failures }, { status: 502 });
   }
 
   // Normalize: severity must match score; sort worst first; potential >= overall.
@@ -310,10 +339,14 @@ export async function POST(req: Request) {
     disclaimer: DISCLAIMER,
   };
 
-  // Persist when Supabase is configured (photo + derived data, 72 h retention).
+  // Tester log: structured results only, never the photo.
+  await logRun({ provider: used, model_served: model, ok: true, results });
+
+  // Persist when Supabase is configured (photo + derived data, 72 h retention). Model re-runs on the
+  // same photo don't create another scan or upload the photo again.
   let scanId: string | null = null;
   const sb = supabaseAdmin();
-  if (sb && !clinic.is_sample) {
+  if (sb && !clinic.is_sample && !body.rerun) {
     try {
       const { data: row, error } = await sb
         .from("scans")

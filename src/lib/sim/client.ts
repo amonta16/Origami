@@ -48,6 +48,9 @@ export function runSimulation(args: {
   useMask?: boolean;
   promptOverride?: string;
   force?: boolean;
+  /** tester session + clinic for the scan_runs log */
+  session?: string;
+  clinicSlug?: string;
 }): Promise<SimResult> {
   const useMask = args.useMask ?? false;
   const key = simKey(args.photoId, args.kind, args.provider ?? "auto", useMask) + (args.promptOverride ? ":custom" : "");
@@ -65,6 +68,8 @@ export function runSimulation(args: {
         kind: args.kind,
         provider: args.provider,
         promptOverride: args.promptOverride,
+        session: args.session,
+        clinicSlug: args.clinicSlug,
       }),
     });
     const json = (await res.json()) as { image?: string; provider?: SimProvider; model?: string; ms?: number; error?: string };

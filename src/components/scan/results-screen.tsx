@@ -4,8 +4,9 @@ import * as React from "react";
 import { AppBar, BottomSheet, Button, Card, Chip, ScoreRing } from "@/components/ui";
 import { CONCERN_BY_ID, ZONE_LABEL, simKindFor } from "@/lib/concerns";
 import { runSimulation, type SimResult } from "@/lib/sim/client";
-import type { Capture, Clinic, ScanResults, Treatment } from "@/lib/types";
+import type { Capture, Clinic, ScanResults, SimProvider, Treatment } from "@/lib/types";
 import { BeforeAfter } from "./before-after";
+import { ModelBar, SimPicker, type ModelState } from "./model-bar";
 import { HeatmapPhoto } from "./heatmap-photo";
 import { MeshViewer } from "./mesh-viewer";
 
@@ -17,6 +18,7 @@ export function ResultsScreen({
   scanId,
   firstName,
   onEvent,
+  models,
 }: {
   clinic: Clinic;
   treatments: Treatment[];
@@ -25,21 +27,54 @@ export function ResultsScreen({
   scanId: string | null;
   firstName?: string;
   onEvent?: (name: string, props?: Record<string, unknown>) => void;
+  models?: ModelState;
 }) {
   const [active, setActive] = React.useState<string | null>(null);
   const [sim, setSim] = React.useState<{ treatment: Treatment; result?: SimResult; error?: string; loading: boolean } | null>(null);
   const photoId = React.useMemo(() => scanId ?? `local-${capture.photo.length}-${capture.width}`, [scanId, capture]);
 
+  // Image-model choice for the "after": remembered on this device.
+  const [simProviders, setSimProviders] = React.useState<Array<{ id: SimProvider; configured: boolean }>>([]);
+  const [simProvider, setSimProvider] = React.useState<SimProvider | "auto">("auto");
+  const [simMask, setSimMask] = React.useState(false);
+  React.useEffect(() => {
+    fetch("/api/simulate")
+      .then((r) => r.json())
+      .then((j: { providers?: Array<{ id: SimProvider; configured: boolean }> }) => setSimProviders(j.providers ?? []))
+      .catch(() => {});
+    try {
+      const p = localStorage.getItem("facet:model:sim");
+      const m = localStorage.getItem("facet:model:sim-mask");
+      queueMicrotask(() => {
+        if (p === "auto" || p === "gemini" || p === "fal" || p === "openai") setSimProvider(p);
+        if (m) setSimMask(m === "1");
+      });
+    } catch {
+      /* private mode */
+    }
+  }, []);
+
   const recommended = results.recommendations
     .map((r) => ({ ...r, treatment: treatments.find((t) => t.id === r.treatment_id) }))
     .filter((r): r is typeof r & { treatment: Treatment } => Boolean(r.treatment));
 
-  const preview = async (treatment: Treatment) => {
+  const preview = async (treatment: Treatment, opts: { provider?: SimProvider | "auto"; mask?: boolean } = {}) => {
     const kind = simKindFor(treatment);
+    const provider = opts.provider ?? simProvider;
+    const useMask = opts.mask ?? simMask;
     setSim({ treatment, loading: true });
-    onEvent?.("sim_requested", { treatment: treatment.name, kind });
+    onEvent?.("sim_requested", { treatment: treatment.name, kind, provider, mask: useMask });
     try {
-      const result = await runSimulation({ photoId, photo: capture.photo, landmarks: capture.landmarks, kind });
+      const result = await runSimulation({
+        photoId,
+        photo: capture.photo,
+        landmarks: capture.landmarks,
+        kind,
+        provider: provider === "auto" ? undefined : provider,
+        useMask,
+        session: models?.session,
+        clinicSlug: clinic.slug,
+      });
       setSim({ treatment, result, loading: false });
       onEvent?.("sim_viewed", { treatment: treatment.name, kind, provider: result.provider, ms: result.ms });
     } catch (e) {
@@ -60,6 +95,11 @@ export function ResultsScreen({
       <section className="px-4 pt-1">
         <p className="text-[11px] font-medium tracking-[0.12em] text-brand-ink">YOUR RESULTS</p>
         <h1 className="font-display mt-1 text-[24px]">{firstName ? `${firstName}, here is what we found.` : "Here is what we found."}</h1>
+        {models && (
+          <div className="mt-3">
+            <ModelBar models={models} />
+          </div>
+        )}
         <div className="mt-4 flex items-center gap-4 rounded-card border border-line bg-surface p-4">
           <ScoreRing value={results.overall_score} potential={results.potential_score} size={150} label="Skin score" caption={`Potential ${results.potential_score}`} />
           <div className="min-w-0 flex-1">
@@ -179,6 +219,37 @@ export function ResultsScreen({
 
       {/* simulation sheet */}
       <BottomSheet open={sim !== null} onClose={() => setSim(null)} title={sim?.treatment.name} className="max-h-[92dvh] overflow-y-auto">
+        {sim && (
+          <SimPicker
+            providers={simProviders}
+            value={simProvider}
+            disabled={sim.loading}
+            onChange={(p) => {
+              setSimProvider(p);
+              try {
+                localStorage.setItem("facet:model:sim", p);
+              } catch {
+                /* ignore */
+              }
+              void preview(sim.treatment, { provider: p });
+            }}
+            mask={simMask}
+            onMask={(m) => {
+              setSimMask(m);
+              try {
+                localStorage.setItem("facet:model:sim-mask", m ? "1" : "0");
+              } catch {
+                /* ignore */
+              }
+              void preview(sim.treatment, { mask: m });
+            }}
+          />
+        )}
+        {sim?.result && !sim.loading && (
+          <p className="-mt-2 mb-3 text-[11px] text-ink-muted">
+            Rendered by {sim.result.model || sim.result.provider} in {(sim.result.ms / 1000).toFixed(1)} s
+          </p>
+        )}
         {sim?.loading && (
           <div className="py-10 text-center">
             <div className="mx-auto size-10 animate-spin rounded-full border-2 border-line border-t-ink" />

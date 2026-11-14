@@ -28,14 +28,17 @@ export const GEMINI_FALLBACKS = ["gemini-3.5-flash", "gemini-3-flash-preview", "
 
 class RetryableGeminiError extends Error {}
 
-export async function geminiStructured<T>(args: Parameters<typeof geminiOnce>[0]): Promise<{ data: T; model: string; usage: unknown; fellBackFrom?: string[] }> {
+export async function geminiStructured<T>(args: Parameters<typeof geminiOnce>[0] & { noFallback?: boolean }): Promise<{ data: T; model: string; usage: unknown; fellBackFrom?: string[] }> {
   const first = args.model || GEMINI_VISION_MODEL;
-  const chain = [first, ...GEMINI_FALLBACKS.filter((m) => m !== first)];
+  // A tester's explicit pick runs alone, so results are never labeled with the wrong model.
+  const chain = args.noFallback ? [first] : [first, ...GEMINI_FALLBACKS.filter((m) => m !== first)];
   const skipped: string[] = [];
   let lastErr: unknown;
   for (const model of chain) {
     try {
-      const out = await geminiOnce<T>({ ...args, model });
+      const { noFallback: _nf, ...once } = args;
+      void _nf;
+      const out = await geminiOnce<T>({ ...once, model });
       return skipped.length ? { ...out, fellBackFrom: skipped } : out;
     } catch (e) {
       lastErr = e;

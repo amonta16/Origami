@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { SIM_PROMPTS } from "@/lib/sim/prompts";
 import { MODELS, providerConfigured, runEdit } from "@/lib/sim/providers";
 import type { SimKind, SimProvider } from "@/lib/types";
+import { getClinicBySlug } from "@/lib/data/clinics";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 export const maxDuration = 120;
 
@@ -13,6 +15,9 @@ type Body = {
   kind: SimKind;
   provider?: SimProvider;
   promptOverride?: string;
+  /** groups runs in scan_runs for the tester comparison page */
+  session?: string;
+  clinicSlug?: string;
 };
 
 const ORDER: SimProvider[] = ["gemini", "fal", "openai"];
@@ -55,7 +60,27 @@ export async function POST(req: Request) {
 
   const prompt = body.promptOverride?.trim() || SIM_PROMPTS[body.kind].prompt;
   const failures: Array<{ provider: SimProvider; error: string }> = [];
+
+  // Tester log (scan_runs): provider, timing, mask on/off and errors. Never the images.
+  const session = typeof body.session === "string" ? body.session.slice(0, 64) : null;
+  const sb = supabaseAdmin();
+  const clinic = session && sb && body.clinicSlug ? await getClinicBySlug(body.clinicSlug) : null;
+  const logRun = async (row: Record<string, unknown>) => {
+    if (!session || !sb) return;
+    const { error } = await sb.from("scan_runs").insert({
+      clinic_id: clinic?.id ?? null,
+      session_id: session,
+      kind: "sim",
+      sim_kind: body.kind,
+      used_mask: Boolean(body.useMask),
+      model_requested: explicit,
+      ...row,
+    });
+    if (error) console.warn("scan_runs insert failed", error.message);
+  };
+
   for (const provider of chain) {
+    const t0 = Date.now();
     try {
       const out = await runEdit(provider, {
         image: body.image,
@@ -64,6 +89,7 @@ export async function POST(req: Request) {
         useMask: Boolean(body.useMask),
         prompt,
       });
+      await logRun({ provider, model_served: out.model, ok: true, ms: out.ms });
       return NextResponse.json({
         image: out.image,
         provider,
@@ -75,6 +101,7 @@ export async function POST(req: Request) {
       const error = e instanceof Error ? e.message : "Simulation failed";
       console.warn(`simulate: ${provider} failed: ${error}`);
       failures.push({ provider, error });
+      await logRun({ provider, ok: false, error: error.slice(0, 500), ms: Date.now() - t0 });
     }
   }
   const last = failures[failures.length - 1];

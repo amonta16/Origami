@@ -13,6 +13,7 @@ export async function openaiStructured<T>(args: {
   images: string[]; // data URLs
   schemaName: string;
   schema: Record<string, unknown>;
+  model?: string;
 }): Promise<{ data: T; model: string; usage: unknown }> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY is not set");
@@ -21,7 +22,7 @@ export async function openaiStructured<T>(args: {
     method: "POST",
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
     body: JSON.stringify({
-      model: OPENAI_VISION_MODEL,
+      model: args.model || OPENAI_VISION_MODEL,
       input: [
         { role: "system", content: [{ type: "input_text", text: args.system }] },
         {

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui";
 import { track } from "@/lib/events";
+import { ANALYSIS_MODELS, analysisModel } from "@/lib/analysis/models";
 import { buildAnalysisCrops, resizeDataUrl } from "@/lib/face/image";
 import type { Capture, Clinic, ScanResults, Treatment } from "@/lib/types";
 import { ClinicTheme } from "@/components/clinic-theme";
@@ -12,6 +13,9 @@ import { FaceCapture } from "./face-capture";
 import { ResultsScreen } from "./results-screen";
 
 type Step = "consent" | "capture" | "analyzing" | "results" | "error";
+
+const MODEL_KEY = "facet:model:analysis";
+const DEFAULT_MODEL = ANALYSIS_MODELS[0].id;
 
 export type StoredScan = {
   capture: Capture;
@@ -37,6 +41,29 @@ export function ScanFlow({
   const [results, setResults] = React.useState<ScanResults | null>(null);
   const [scanId, setScanId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  // Model comparison: one session per captured photo; results kept per model id.
+  const [session, setSession] = React.useState<string>("");
+  const [runs, setRuns] = React.useState<Record<string, ScanResults>>({});
+  const [activeModel, setActiveModel] = React.useState<string>(DEFAULT_MODEL);
+  // A tester's saved pick pins the first analysis to that model; without one, the server's
+  // default runs with its automatic fallback so a patient's scan never fails over quota.
+  const [savedPick, setSavedPick] = React.useState<string | null>(null);
+  const [busyModel, setBusyModel] = React.useState<string | null>(null);
+  const [modelError, setModelError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem(MODEL_KEY);
+      if (saved && analysisModel(saved)) {
+        queueMicrotask(() => {
+          setActiveModel(saved);
+          setSavedPick(saved);
+        });
+      }
+    } catch {
+      /* private mode */
+    }
+  }, []);
 
   const ev = React.useCallback(
     (name: string, props: Record<string, unknown> = {}) => track(name, { ...props, clinic: clinic.slug }, { clinicId: clinic.id }),
@@ -47,11 +74,69 @@ export function ScanFlow({
     ev("scan_started", {});
   }, [ev]);
 
+  /** Re-run the same photo with another model (results screen "Model" buttons). */
+  const rerun = React.useCallback(
+    async (modelId: string) => {
+      if (!capture) return;
+      try {
+        localStorage.setItem(MODEL_KEY, modelId);
+        setSavedPick(modelId);
+      } catch {
+        /* ignore */
+      }
+      if (runs[modelId]) {
+        setActiveModel(modelId);
+        setResults(runs[modelId]);
+        setModelError(null);
+        return;
+      }
+      setBusyModel(modelId);
+      setModelError(null);
+      try {
+        const small = await resizeDataUrl(capture.photo, 1024, 0.9);
+        const crops = await buildAnalysisCrops(capture.photo, capture.landmarks);
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            clinicSlug: clinic.slug,
+            photo: small.dataUrl,
+            crops,
+            landmarks: capture.landmarks,
+            source: capture.source,
+            width: capture.width,
+            height: capture.height,
+            firstName: firstName ?? null,
+            answers: answers ?? null,
+            model: modelId,
+            session,
+            rerun: true,
+          }),
+        });
+        const json = (await res.json()) as { results?: ScanResults; error?: string };
+        if (!res.ok || !json.results) throw new Error(json.error || `Analysis failed (${res.status})`);
+        setRuns((r) => ({ ...r, [modelId]: json.results! }));
+        setActiveModel(modelId);
+        setResults(json.results);
+        ev("model_compared", { model: modelId, score: json.results.overall_score });
+      } catch (e) {
+        setModelError(`${analysisModel(modelId)?.label ?? modelId}: ${e instanceof Error ? e.message : "failed"}`);
+      } finally {
+        setBusyModel(null);
+      }
+    },
+    [answers, capture, clinic.slug, ev, firstName, runs, session],
+  );
+
   const analyze = React.useCallback(
     async (cap: Capture) => {
       setStep("analyzing");
       setAnalyzeStep(0);
       ev("analysis_started", { source: cap.source });
+      const sess = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `s-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      setSession(sess);
+      setRuns({});
+      setModelError(null);
       try {
         const small = await resizeDataUrl(cap.photo, 1024, 0.9);
         setAnalyzeStep(1);
@@ -72,12 +157,18 @@ export function ScanFlow({
             height: cap.height,
             firstName: firstName ?? null,
             answers: answers ?? null,
+            model: savedPick ?? undefined,
+            session: sess,
           }),
         });
         const json = (await res.json()) as { results?: ScanResults; scanId?: string | null; error?: string };
         if (!res.ok || !json.results) throw new Error(json.error || `Analysis failed (${res.status})`);
         setAnalyzeStep(3);
         setResults(json.results);
+        // File the run under the model that actually answered (fallback may have changed it).
+        const served = analysisModel(json.results.model)?.id ?? ANALYSIS_MODELS.find((m) => json.results!.model.startsWith(m.id))?.id ?? savedPick ?? DEFAULT_MODEL;
+        setActiveModel(served);
+        setRuns({ [served]: json.results });
         setScanId(json.scanId ?? null);
         try {
           sessionStorage.setItem(
@@ -96,7 +187,7 @@ export function ScanFlow({
         setStep("error");
       }
     },
-    [answers, clinic.slug, ev, firstName],
+    [savedPick, answers, clinic.slug, ev, firstName],
   );
 
   let body: React.ReactNode;
@@ -132,6 +223,7 @@ export function ScanFlow({
         scanId={scanId}
         firstName={firstName}
         onEvent={ev}
+        models={{ active: activeModel, runs, busy: busyModel, error: modelError, onPick: rerun, session }}
       />
     );
   } else {
