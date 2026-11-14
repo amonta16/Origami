@@ -14,7 +14,7 @@ Three users, one loop:
 
 ## Status
 
-Phase 0 (setup) in progress. See `BUILD_LOG.md` for a timestamped log of what was built and which AI tools did what.
+Phase 0 (setup) done; Phase 1 (face scan core) built and deployed, pending API keys and a real-phone camera test. Supabase project live with schema and sample clinic. See `BUILD_LOG.md` for a timestamped log of what was built and which AI tools did what.
 
 - Live URL: https://facet-tau-weld.vercel.app
 - Repo: https://github.com/amonta16/facet (private during the event)
