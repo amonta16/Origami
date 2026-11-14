@@ -1,26 +1,128 @@
 @import "tailwindcss";
 
+/*
+  Facet design tokens — "clinical luxe".
+  Source of truth for color, type, radius and shadow. Tailwind 4 reads the
+  @theme block as its config, so every token below is also a utility class
+  (bg-ivory, text-ink, font-display, rounded-card, shadow-soft, ...).
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base */
+  --ivory: #f8f4ed;
+  --ivory-deep: #efe8dc;
+  --surface: #fffdf9;
+  --ink: #17130f;
+  --ink-soft: #3d352d;
+  --ink-muted: #76695c;
+  --line: #e6ddd0;
+  --line-strong: #cfc3b3;
+
+  /* One confident accent: clinic green */
+  --accent: #1f5e4b;
+  --accent-deep: #164838;
+  --accent-soft: #dcebe3;
+  --accent-ink: #0f3a2d;
+
+  /* Severity ramp for concerns (never used for brand) */
+  --sev-none: #c9d9d0;
+  --sev-mild: #e8c48a;
+  --sev-moderate: #d98d5a;
+  --sev-pronounced: #b4443e;
+  --sev-pronounced-soft: #f4dcd8;
+
+  /* Feedback */
+  --ok: #1f5e4b;
+  --warn: #b8761c;
+  --danger: #a93a34;
+
+  --shadow-soft: 0 1px 2px rgba(23, 19, 15, 0.04), 0 14px 36px -16px rgba(23, 19, 15, 0.18);
+  --shadow-lift: 0 2px 4px rgba(23, 19, 15, 0.05), 0 24px 56px -20px rgba(23, 19, 15, 0.26);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ivory: var(--ivory);
+  --color-ivory-deep: var(--ivory-deep);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-sev-none: var(--sev-none);
+  --color-sev-mild: var(--sev-mild);
+  --color-sev-moderate: var(--sev-moderate);
+  --color-sev-pronounced: var(--sev-pronounced);
+  --color-sev-pronounced-soft: var(--sev-pronounced-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-chip: 999px;
+  --radius-field: 14px;
+  --radius-card: 20px;
+  --radius-sheet: 28px;
+
+  --shadow-soft: var(--shadow-soft);
+  --shadow-lift: var(--shadow-lift);
+
+  /* Patient screens are designed at 390px */
+  --container-phone: 390px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ivory);
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+/* Display type: Fraunces with the soft optical axis up, tight tracking */
+.font-display {
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+
+.font-display-numeral {
+  font-variation-settings: "SOFT" 80, "WONK" 0;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* Focus: visible, warm, never removed */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
