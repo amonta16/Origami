@@ -196,7 +196,8 @@ export async function buildPreview(input: { query: string; website: string | nul
       logo_url: logo,
       hero_photo_url: hero,
       phone: fmtPhone(x.phone || home.phones[0] || ""),
-      address: x.address || null,
+      // sites often list only the street; keep the city on it so the map lands in the right town
+      address: x.address ? (x.city && !x.address.toLowerCase().includes(x.city.toLowerCase()) ? `${x.address}, ${x.city}` : x.address) : null,
       city: x.city || null,
       website: home.url,
       booking_url: normalizeUrl(x.booking_url ?? "")?.toString() ?? null,

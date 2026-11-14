@@ -13,6 +13,8 @@ export const TEAM_TEST_CLINIC_SLUGS: readonly string[] = [
   "med-spa-slo-96ag",
   "med-spa-slo-2dr6",
   "med-spa-slo-97zh",
+  // built by Claude by accident while testing the type-ahead on dev (Sat Nov 14, 11:23 AM PT)
+  "skin-deep-medical-spa-3gx9",
 ];
 
 /** Fri Nov 13, 2026, 5:00 PM Pacific (PST, UTC-8): the hackathon start. */

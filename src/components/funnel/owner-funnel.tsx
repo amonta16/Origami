@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import type { SpaSuggestion } from "@/lib/funnel/suggest";
 
 type Step = "find" | "read" | "menu" | "brand" | "build";
 type StepState = { status: "wait" | "run" | "done"; detail?: string };
@@ -35,6 +36,64 @@ export function OwnerFunnel() {
   const [name, setName] = React.useState<string | null>(null);
   const [message, setMessage] = React.useState<string | null>(null);
   const siteRef = React.useRef<HTMLInputElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // type-ahead: spas whose websites the server just verified
+  const [picked, setPicked] = React.useState<SpaSuggestion | null>(null);
+  const [sugs, setSugs] = React.useState<SpaSuggestion[]>([]);
+  const [looking, setLooking] = React.useState(false);
+  const [lookedFor, setLookedFor] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+  const [active, setActive] = React.useState(-1);
+  const cache = React.useRef(new Map<string, SpaSuggestion[]>());
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inflight = React.useRef<AbortController | null>(null);
+
+  const onType = (value: string) => {
+    setQuery(value);
+    setOpen(true);
+    setActive(-1);
+    if (picked) {
+      setPicked(null);
+      setWebsite("");
+    }
+    if (timer.current) clearTimeout(timer.current);
+    inflight.current?.abort();
+    const text = value.trim();
+    if (text.length < 3) {
+      setSugs([]);
+      setLooking(false);
+      setLookedFor("");
+      return;
+    }
+    const key = text.toLowerCase();
+    const hit = cache.current.get(key);
+    if (hit) {
+      setSugs(hit);
+      setLookedFor(text);
+      setLooking(false);
+      return;
+    }
+    setLooking(true);
+    timer.current = setTimeout(async () => {
+      const ctl = new AbortController();
+      inflight.current = ctl;
+      try {
+        const r = await fetch(`/api/build/suggest?q=${encodeURIComponent(text)}`, { signal: ctl.signal });
+        const j = (await r.json()) as { suggestions?: SpaSuggestion[] };
+        const list = j.suggestions ?? [];
+        if (r.ok) cache.current.set(key, list);
+        setSugs(list);
+        setLookedFor(text);
+        setLooking(false);
+      } catch {
+        if (!ctl.signal.aborted) {
+          setLooking(false);
+          setLookedFor(text);
+        }
+      }
+    }, 420);
+  };
 
   const run = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -49,7 +108,7 @@ export function OwnerFunnel() {
       const res = await fetch("/api/build", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ query: query.trim(), website: website.trim() || undefined }),
+        body: JSON.stringify({ query: picked ? [picked.name, picked.place].filter(Boolean).join(", ") : query.trim(), website: website.trim() || undefined }),
       });
       if (!res.ok || !res.body) {
         const j = await res.json().catch(() => ({}));
@@ -108,29 +167,159 @@ export function OwnerFunnel() {
     return <BuildScreen steps={steps} brand={brand} tiles={tiles} name={name} query={query || website} error={phase === "error" ? message : null} onRetry={() => setPhase("idle")} />;
   }
 
+  const q = query.trim();
+  const listOpen = open && !picked && q.length >= 3;
+  const settled = !looking && lookedFor.toLowerCase() === q.toLowerCase();
+
+  const choose = (s: SpaSuggestion) => {
+    setPicked(s);
+    setQuery(s.name);
+    setWebsite(s.website);
+    setOpen(false);
+    setActive(-1);
+    setMessage(null);
+  };
+
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!listOpen) return;
+    if (e.key === "ArrowDown" && sugs.length) {
+      e.preventDefault();
+      setActive((a) => (a + 1) % sugs.length);
+    } else if (e.key === "ArrowUp" && sugs.length) {
+      e.preventDefault();
+      setActive((a) => (a <= 0 ? sugs.length - 1 : a - 1));
+    } else if (e.key === "Enter") {
+      // Enter picks the highlighted (or top) match; while matches are still loading it waits
+      // instead of starting a build from half-typed text. With no matches it builds by name.
+      if (sugs.length) {
+        e.preventDefault();
+        choose(sugs[Math.max(0, active)]);
+      } else if (!settled) {
+        e.preventDefault();
+      }
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
   return (
     <form onSubmit={run} className="w-full">
-      <div className="flex flex-col gap-2 rounded-[20px] border border-line-strong bg-surface p-2 shadow-lift sm:flex-row sm:items-center">
-        <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
-          <svg viewBox="0 0 24 24" className="size-5 shrink-0 text-ink-muted" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5" />
-            <path d="m16 16 4 4" />
-          </svg>
-          <span className="sr-only">Your med spa&rsquo;s name and city</span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Your med spa’s name and city"
-            autoComplete="organization"
-            className="h-12 min-w-0 flex-1 bg-transparent text-[17px] text-ink outline-none placeholder:text-ink-muted/70"
-          />
-        </label>
-        <Button type="submit" size="lg" disabled={query.trim().length < 3 && !website.trim()} className="sm:shrink-0">
-          Build my app
-        </Button>
+      <div className="relative">
+        <div className="flex flex-col gap-2 rounded-[20px] border border-line-strong bg-surface p-2 shadow-lift sm:flex-row sm:items-center">
+          <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
+            {picked ? (
+              <SpaIcon s={picked} size={22} />
+            ) : (
+              <svg viewBox="0 0 24 24" className="size-5 shrink-0 text-ink-muted" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="m16 16 4 4" />
+              </svg>
+            )}
+            <span className="sr-only">Your med spa&rsquo;s name</span>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => onType(e.target.value)}
+              onFocus={() => setOpen(true)}
+              onBlur={() => setOpen(false)}
+              onKeyDown={onKey}
+              placeholder="Start typing your med spa’s name"
+              autoComplete="off"
+              role="combobox"
+              aria-expanded={listOpen}
+              aria-controls="spa-suggestions"
+              aria-autocomplete="list"
+              aria-activedescendant={active >= 0 ? `spa-opt-${active}` : undefined}
+              className="h-12 min-w-0 flex-1 bg-transparent text-[17px] text-ink outline-none placeholder:text-ink-muted/70"
+            />
+            {looking && !picked && <span aria-hidden="true" className="size-4 shrink-0 animate-spin rounded-full border-2 border-ink/15 border-t-ink/60" />}
+          </label>
+          <Button type="submit" size="lg" disabled={q.length < 3 && !website.trim()} className="sm:shrink-0">
+            Build my app
+          </Button>
+        </div>
+
+        {listOpen && (
+          <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-[18px] border border-line bg-surface text-left shadow-lift">
+            {sugs.length > 0 && <p className="px-4 pb-0.5 pt-3 text-[12px] text-ink-muted">Matching med spas, websites checked</p>}
+            <ul id="spa-suggestions" role="listbox" aria-label="Med spas that match" className="max-h-[340px] overflow-y-auto py-1.5">
+              {sugs.map((s, i) => (
+                <li key={s.host} id={`spa-opt-${i}`} role="option" aria-selected={i === active}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => choose(s)}
+                    onMouseEnter={() => setActive(i)}
+                    className={cn("flex w-full items-center gap-3 px-4 py-2.5 text-left", i === active ? "bg-surface-muted" : "")}
+                  >
+                    <SpaIcon s={s} size={36} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[16px] font-medium text-ink">{s.name}</span>
+                      <span className="flex min-w-0 items-center gap-1 text-[13px] text-ink-muted">
+                        <span className="text-ok" title="We opened this website and it matches">
+                          <CheckIcon />
+                        </span>
+                        <span className="truncate">{[s.host, s.place].filter(Boolean).join(" · ")}</span>
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {(looking || !settled) && (
+              <p className="flex items-center gap-2.5 px-4 pb-3 pt-1.5 text-[14px] text-ink-muted">
+                <span aria-hidden="true" className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-ink/15 border-t-ink/60" />
+                {sugs.length ? "Checking for more matches…" : <>Looking up med spas named &ldquo;{q}&rdquo;…</>}
+              </p>
+            )}
+            {settled && !sugs.length && (
+              <p className="px-4 pb-2 pt-3 text-[14px] leading-snug text-ink-muted">
+                No match for &ldquo;{q}&rdquo; yet. Keep typing the full name, add your city, or use your website.
+              </p>
+            )}
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setOpen(false);
+                setShowSite(true);
+                setTimeout(() => siteRef.current?.focus(), 30);
+              }}
+              className="flex w-full items-center gap-2 border-t border-line px-4 py-3 text-left text-[14px] text-ink-muted hover:bg-surface-muted hover:text-ink"
+            >
+              Not listed? Build from your website instead
+            </button>
+          </div>
+        )}
       </div>
 
-      {showSite ? (
+      {picked && (
+        <div className="mt-3 flex items-center gap-3 rounded-[16px] border border-line bg-surface p-3 text-left">
+          <SpaIcon s={picked} size={40} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[15px] font-semibold text-ink">{picked.name}</span>
+            <span className="flex min-w-0 items-center gap-1 text-[13px] text-ok">
+              <CheckIcon />
+              <span className="truncate">Found {picked.host}</span>
+            </span>
+            {picked.place && <span className="block truncate text-[12px] text-ink-muted">{picked.place}</span>}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setPicked(null);
+              setWebsite("");
+              setOpen(true);
+              setTimeout(() => inputRef.current?.focus(), 30);
+            }}
+            className="shrink-0 text-[13px] text-ink-muted underline-offset-2 hover:text-ink hover:underline"
+          >
+            Change
+          </button>
+        </div>
+      )}
+
+      {picked ? null : showSite ? (
         <div className="mt-3 flex flex-col gap-2 rounded-[16px] border border-line bg-surface p-3 sm:flex-row sm:items-center">
           <label className="flex min-w-0 flex-1 items-center gap-3 px-1">
             <span className="shrink-0 text-[13px] text-ink-muted">Website</span>
@@ -156,6 +345,34 @@ export function OwnerFunnel() {
         </p>
       )}
     </form>
+  );
+}
+
+/* ------------------------------------------------------------ suggestion bits */
+
+/** The spa's own site icon, or its first letter when the icon is missing or broken. */
+function SpaIcon({ s, size }: { s: SpaSuggestion; size: number }) {
+  const [broken, setBroken] = React.useState(false);
+  const box = { width: size, height: size };
+  if (s.icon && !broken) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={s.icon} alt="" style={box} onError={() => setBroken(true)} className="shrink-0 rounded-[10px] border border-line bg-white object-contain p-0.5" />
+    );
+  }
+  return (
+    <span aria-hidden="true" style={{ ...box, fontSize: size * 0.42 }} className="grid shrink-0 place-items-center rounded-[10px] bg-surface-muted font-semibold text-ink-soft">
+      {s.name.trim().charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="7" fill="currentColor" opacity=".15" />
+      <path d="M4.8 8.3l2.1 2.1 4.3-4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
