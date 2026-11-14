@@ -44,9 +44,13 @@ function pickProvider(): "openai" | "gemini" | null {
  *                                query to Supabase, and reports ok / error text + latency
  */
 export async function GET(req: Request) {
-  const ping = new URL(req.url).searchParams.get("ping") === "1";
+  const params = new URL(req.url).searchParams;
+  const ping = params.get("ping") === "1";
   const provider = pickProvider();
-  const model = provider === "openai" ? OPENAI_VISION_MODEL : provider === "gemini" ? GEMINI_VISION_MODEL : null;
+  // ?model= lets the lab try another model id without a redeploy; ?nothink=1 turns thinking off on Gemini.
+  const modelOverride = params.get("model")?.trim() || null;
+  const noThink = params.get("nothink") === "1";
+  const model = modelOverride ?? (provider === "openai" ? OPENAI_VISION_MODEL : provider === "gemini" ? GEMINI_VISION_MODEL : null);
   const out: Record<string, unknown> = {
     analysis: { provider, model },
     supabase: { configured: isSupabaseConfigured() },
@@ -55,7 +59,7 @@ export async function GET(req: Request) {
 
   // Each probe gets its own 15 s budget and they run in parallel, so a hang is reported by name
   // instead of taking the whole function down with FUNCTION_INVOCATION_TIMEOUT.
-  const PROBE_MS = 25_000;
+  const PROBE_MS = Math.min(Math.max(Number(params.get("timeout")) || 25_000, 5_000), 50_000);
 
   // Gemini only: is the key accepted at all, and does the model id exist? (cheap GET, no generation)
   const probeGeminiModels = async () => {
@@ -91,12 +95,12 @@ export async function GET(req: Request) {
       const signal = AbortSignal.timeout(PROBE_MS);
       if (provider === "gemini") {
         const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
-        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_VISION_MODEL}:generateContent`, {
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
           method: "POST",
           headers: { "x-goog-api-key": key!, "content-type": "application/json" },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: "Reply with the single word ok." }] }],
-            generationConfig: { max_output_tokens: 8 },
+            generationConfig: { max_output_tokens: 64, ...(noThink ? { thinkingConfig: { thinkingBudget: 0 } } : {}) },
           }),
           signal,
         });
@@ -104,16 +108,25 @@ export async function GET(req: Request) {
         res = await fetch("https://api.openai.com/v1/responses", {
           method: "POST",
           headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "content-type": "application/json" },
-          body: JSON.stringify({ model: OPENAI_VISION_MODEL, input: "Reply with the single word ok.", max_output_tokens: 16 }),
+          body: JSON.stringify({ model, input: "Reply with the single word ok.", max_output_tokens: 16 }),
           signal,
         });
       }
-      const json = (await res.json()) as { error?: { message?: string }; modelVersion?: string; model?: string };
+      const json = (await res.json()) as {
+        error?: { message?: string };
+        modelVersion?: string;
+        model?: string;
+        candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string }> } }>;
+        usageMetadata?: unknown;
+      };
       out.analysis = {
         provider,
         model,
         ok: res.ok,
         served: json.modelVersion ?? json.model ?? null,
+        text: json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? null,
+        finishReason: json.candidates?.[0]?.finishReason ?? null,
+        usage: json.usageMetadata ?? null,
         error: res.ok ? null : json.error?.message ?? `HTTP ${res.status}`,
         ms: Date.now() - t0,
       };
