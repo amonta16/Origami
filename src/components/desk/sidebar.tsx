@@ -32,13 +32,9 @@ function navFor(slug: string): { main: NavItem[]; lower: NavItem[] } {
 function Wordmark() {
   return (
     <span className="flex items-center gap-2">
-      <span aria-hidden="true" className="grid size-7 place-items-center rounded-[9px] bg-ink text-white">
-        <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-          <path d="M12 3 20 9l-3 11H7L4 9Z" />
-          <path d="M4 9h16M12 3v17" />
-        </svg>
-      </span>
-      <span className="font-display text-[19px]">Facet</span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/atlas-engine-bird.png" alt="" width={28} height={28} className="size-7" />
+      <span className="font-brand-serif text-[22px]">Facet</span>
     </span>
   );
 }

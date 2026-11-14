@@ -24,13 +24,16 @@ Every open-source library, API, font and model used in Facet, with its license a
 | [Fraunces](https://fonts.google.com/specimen/Fraunces) | OFL-1.1 | Display serif for headlines and scores |
 | [Inter](https://fonts.google.com/specimen/Inter) | OFL-1.1 | UI sans (front desk, owner pages) |
 | [Hanken Grotesk](https://fonts.google.com/specimen/Hanken+Grotesk) | OFL-1.1 | Patient app type, chosen to match the reference screenshots |
-| [Caveat](https://fonts.google.com/specimen/Caveat) | OFL-1.1 | Handwritten "For you" tag on the welcome gift |
+| [Caveat](https://fonts.google.com/specimen/Caveat) | OFL-1.1 | Handwritten tags on the themed gifts |
+| [Frank Ruhl Libre](https://fonts.google.com/specimen/Frank+Ruhl+Libre) | OFL-1.1 | Serif headlines on the landing page, owner preview and desk logo |
+| [Roboto Flex](https://fonts.google.com/specimen/Roboto+Flex) | OFL-1.1 | Body text on the landing page and owner preview |
 
 ## Images
 
 | Image | Source and license | Where |
 |---|---|---|
 | "A woman with dark hair" (photo-1652226825940-46ad2a55d132) | [Unsplash](https://unsplash.com/photos/a-woman-with-dark-hair-0NDVW4wO1Ms), free under the Unsplash License; hotlinked from Unsplash's CDN | Example face on the skin-analysis card and the scan consent screen, labeled "Example photo · Unsplash". Landmarks measured with MediaPipe in the browser. |
+| Origami bird logo (`public/brand/atlas-engine-bird.png`, `src/app/icon.png`, `src/app/apple-icon.png`) | Supplied by the team (Atlas Engine) in chat on Sat Nov 14, 2026 as their brand mark; background removed with ffmpeg. Claude noted it matches origami.chat's logo; the team confirmed they want it used. | Landing header, desk sidebar, favicon and home-screen icon |
 | Stock treatment, product and room photos (about 30, IDs listed in `src/lib/stock-photos.ts`) | [Unsplash](https://unsplash.com), free under the Unsplash License, searched with the "free" license filter on Nov 14, 2026; hotlinked from Unsplash's CDN | Fill empty photo slots in patient apps (treatments, skincare, packages, home hero, About). Matched to the treatment type, never before/after results. The app footer says "Some photos are stock images" and the treatment page labels them "Stock photo". |
 | Clinic logos, photos and menus in preview apps | The spa's own public website, read by the owner funnel | That spa's private preview only, labeled "Preview · not live yet" |
 

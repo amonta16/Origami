@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Caveat, Fraunces, Hanken_Grotesk, Inter } from "next/font/google";
+import { Caveat, Frank_Ruhl_Libre, Fraunces, Hanken_Grotesk, Inter, Roboto_Flex } from "next/font/google";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -18,6 +18,21 @@ const inter = Inter({
 // Patient app face, matched to the reference screenshots' rounded grotesk.
 const hanken = Hanken_Grotesk({
   variable: "--font-hanken",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+// Owner-facing pages (landing, preview, build screen): serif headlines + a flexible sans,
+// chosen by the team on Sat Nov 14 to match the look they liked (both OFL, Google Fonts).
+const frank = Frank_Ruhl_Libre({
+  variable: "--font-frank",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+});
+
+const robotoFlex = Roboto_Flex({
+  variable: "--font-roboto-flex",
   subsets: ["latin"],
   display: "swap",
 });
@@ -50,7 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${inter.variable} ${hanken.variable} ${caveat.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${inter.variable} ${hanken.variable} ${caveat.variable} ${frank.variable} ${robotoFlex.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

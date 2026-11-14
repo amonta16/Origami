@@ -35,7 +35,7 @@ async function Preview({ params }: { params: PageProps<"/p/[slug]">["params"] })
   const origin = `${h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https")}://${host}`;
 
   return (
-    <ClinicTheme clinic={clinic} className="bg-page">
+    <ClinicTheme clinic={clinic} className="brand-type bg-page">
       <div className="bg-[#111318] px-4 py-2 text-center text-[12px] text-white/85">
         {clinic.is_preview ? "This is a private preview of your app. It isn't live for patients yet." : `${clinic.name}'s app`}
       </div>
