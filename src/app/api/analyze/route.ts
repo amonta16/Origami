@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { analysisSchema, analysisSchemaGemini } from "@/lib/analysis/schema";
 import { analysisSystemPrompt, analysisUserPrompt } from "@/lib/analysis/prompt";
-import { openaiStructured } from "@/lib/analysis/openai";
-import { geminiStructured } from "@/lib/analysis/gemini";
+import { openaiStructured, OPENAI_VISION_MODEL } from "@/lib/analysis/openai";
+import { geminiStructured, GEMINI_VISION_MODEL } from "@/lib/analysis/gemini";
 import { severityFromScore } from "@/lib/concerns";
 import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase/server";
 import type { ScanResults } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -27,6 +27,76 @@ type Body = {
   leadId?: string | null;
 };
 
+/** Which analysis provider the server would use right now, from env alone. */
+function pickProvider(): "openai" | "gemini" | null {
+  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
+  const hasGemini = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
+  const wanted = process.env.ANALYSIS_PROVIDER;
+  if (wanted === "gemini" && hasGemini) return "gemini";
+  if (wanted === "openai" && hasOpenAI) return "openai";
+  return hasOpenAI ? "openai" : hasGemini ? "gemini" : null;
+}
+
+/**
+ * Health check for the lab and for smoke tests after a deploy. Never returns key values.
+ *   GET /api/analyze          -> which provider/model is configured, whether Supabase is wired
+ *   GET /api/analyze?ping=1   -> also makes one tiny text call to the provider and one count
+ *                                query to Supabase, and reports ok / error text + latency
+ */
+export async function GET(req: Request) {
+  const ping = new URL(req.url).searchParams.get("ping") === "1";
+  const provider = pickProvider();
+  const model = provider === "openai" ? OPENAI_VISION_MODEL : provider === "gemini" ? GEMINI_VISION_MODEL : null;
+  const out: Record<string, unknown> = {
+    analysis: { provider, model },
+    supabase: { configured: isSupabaseConfigured() },
+  };
+  if (!ping) return NextResponse.json(out);
+
+  if (provider) {
+    const t0 = Date.now();
+    try {
+      let res: Response;
+      if (provider === "gemini") {
+        const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_VISION_MODEL}:generateContent`, {
+          method: "POST",
+          headers: { "x-goog-api-key": key!, "content-type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: "Reply with the single word ok." }] }],
+            generationConfig: { max_output_tokens: 8 },
+          }),
+        });
+      } else {
+        res = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "content-type": "application/json" },
+          body: JSON.stringify({ model: OPENAI_VISION_MODEL, input: "Reply with the single word ok.", max_output_tokens: 16 }),
+        });
+      }
+      const json = (await res.json()) as { error?: { message?: string }; modelVersion?: string; model?: string };
+      out.analysis = {
+        provider,
+        model,
+        ok: res.ok,
+        served: json.modelVersion ?? json.model ?? null,
+        error: res.ok ? null : json.error?.message ?? `HTTP ${res.status}`,
+        ms: Date.now() - t0,
+      };
+    } catch (e) {
+      out.analysis = { provider, model, ok: false, error: e instanceof Error ? e.message : String(e), ms: Date.now() - t0 };
+    }
+  }
+
+  const sb = supabaseAdmin();
+  if (sb) {
+    const t0 = Date.now();
+    const { count, error } = await sb.from("clinics").select("id", { count: "exact", head: true });
+    out.supabase = { configured: true, ok: !error, clinics: count ?? null, error: error?.message ?? null, ms: Date.now() - t0 };
+  }
+  return NextResponse.json(out);
+}
+
 export async function POST(req: Request) {
   let body: Body;
   try {
@@ -44,11 +114,7 @@ export async function POST(req: Request) {
   const treatments = await getTreatments(clinic.id);
 
   // Provider: explicit env, else whichever key exists (OpenAI first, then Gemini's free tier).
-  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
-  const hasGemini = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
-  const wanted = process.env.ANALYSIS_PROVIDER;
-  const provider: "openai" | "gemini" | null =
-    wanted === "gemini" && hasGemini ? "gemini" : wanted === "openai" && hasOpenAI ? "openai" : hasOpenAI ? "openai" : hasGemini ? "gemini" : null;
+  const provider = pickProvider();
   if (!provider) {
     return NextResponse.json(
       { error: "Analysis isn't configured yet (set OPENAI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY on the server)." },
