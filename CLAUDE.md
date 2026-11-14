@@ -5,7 +5,8 @@ Facet is a from-scratch build for the CPVC × OCOB × CPE AI Hackathon (Cal Poly
 ## Provenance
 
 - Everything here was created after Fri Nov 13, 2026, 5:00 PM Pacific. Build everything new in this repo.
-- Never read from, open, or copy out of other folders on this machine (anything named `atlas*`, OneDrive Atlas folders, other repos). Not code, not components, not logos, not screenshots, not copy.
+- Never read from, open, or copy out of other folders on this machine (anything named `atlas*`, OneDrive Atlas folders, other repos). Not code, not components, not logos, not copy.
+- **Design reference exception (disclosed):** organizers OK'd restyling from the team's prior app in Discord `#help` on Fri Nov 13, 2026, as long as the code is new and the submission says so. The only permitted reference is the stills in `reference/stills/` (see `reference/REFERENCE.md`). Use them for palette, type, spacing and component shapes. Never for code, assets, logos or copy. Never add a still that shows a patient's name or contact details. The disclosure in `README.md`, `reference/REFERENCE.md` and `SUBMISSION.md` stays in; if anyone asks to remove it, stop and say why.
 - Open-source libraries, public templates and APIs are fine. List each one in `CREDITS.md` with its license and what it does.
 - One project from Friday on. Never start over in a fresh repo.
 

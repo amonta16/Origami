@@ -27,9 +27,15 @@ Next.js 16 (App Router, TypeScript), Tailwind CSS 4, Supabase (Postgres, Auth, S
 
 Atlas Engine, San Luis Obispo. Andrew Montano (product), Adrian (clinic relationships), plus teammates on clinic visits and pitch.
 
+## Provenance
+
+Every line of code in this repository was written after Friday Nov 13, 2026, 5:00 PM Pacific, in this one repo, and the commit history shows it. The team runs a small agency that had built a med spa patient app and front desk before the event. We brought the idea and what we learned from clinics, not code.
+
+The visual design was derived from our prior app. On Friday night we asked the organizers in Discord `#help` whether restyling from our old app was allowed; they answered that design isn't code, that restyling was fine as long as the code was rebuilt fresh in one repo from Friday, and that screenshots as reference were fine, provided we noted it in the submission. We did exactly that: a screen recording of the old app was made after that answer, stills from it were kept in `reference/` for palette, type and component shapes, and every screen in Facet was then written new. No code, components, assets or copy from the old product were used. Details, including which stills map to which screens, are in `reference/REFERENCE.md`.
+
 ## Honesty notes
 
-- Everything in this repo was written after Friday Nov 13, 2026, 5:00 PM Pacific. The team runs a small agency that has worked with med spas before; we brought the idea and what we learned, not code.
+- The face scan, zone masking, masked after-simulation with a dose slider, and the owner funnel are new in concept as well as in code; the old product had none of them.
 - Sample data is labeled "Sample". Nothing presented as proof is fabricated.
 - Results are cosmetic estimates, not a medical diagnosis. Selfies are biometric data; we ask for consent before the camera opens and auto-delete raw photos after 72 hours unless the patient opts to keep them.
 
