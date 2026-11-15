@@ -27,6 +27,12 @@ the bird mark). Every slide carries the matching part of the script as speaker n
 | 15 | A different approach | Interest → engagement → purchase → relationship |
 | 16 | End | "Start building a business that keeps its customers." |
 
+## Screenshots on the slides
+
+Slides 6, 7, 8, 9 and 11 carry phone captures of the live sample clinic (`/s/sample`, labeled "Sample clinic"
+in the app): home with the gift, the scan consent screen with the example face, the shop, the memberships tab and
+rewards. Taken Sun Nov 15, 2026 at 390 × 844 CSS px, 3× scale. Recapture after any visual change to the app.
+
 ## Placeholders to fill before presenting
 
 - Slide 12: customer name or approved description, the specific problem, what they actually did, how it was documented.
