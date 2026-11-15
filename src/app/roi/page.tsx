@@ -3,7 +3,7 @@ import Link from "next/link";
 import { RoiCalculator } from "@/components/marketing/roi-calculator";
 
 export const metadata: Metadata = {
-  title: "Is Origami worth it? | Origami",
+  title: "Is Origami worth it?",
   description: "Slide in your own numbers and see what patients who come back are worth next to Origami's $250 a month.",
 };
 
