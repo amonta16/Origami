@@ -1,5 +1,7 @@
 import "server-only";
-import type { SimProvider } from "@/lib/types";
+import sharp from "sharp";
+import { YoucamError, youcamConfigured, youcamRunTask, youcamUpload } from "@/lib/analysis/youcam";
+import type { SimKind, SimProvider } from "@/lib/types";
 
 /**
  * Image-edit provider adapters. Each takes a JPEG data URL (+ optional alpha mask PNG)
@@ -12,6 +14,7 @@ import type { SimProvider } from "@/lib/types";
 //  - fal: fal-ai/flux-pro/kontext $0.04/image (no mask); fal-ai/flux-pro/v1/fill takes mask_url (white = edit)
 //  - OpenAI: gpt-image-2.5-sunburst via /v1/images/edits, alpha-PNG mask, ~$0.05 medium
 export const MODELS = {
+  youcam: "youcam-sim-v2",
   gemini: process.env.GEMINI_IMAGE_MODEL || "gemini-nano-banana-2.1",
   fal: process.env.FAL_EDIT_MODEL || "fal-ai/flux-pro/kontext",
   falFill: process.env.FAL_FILL_MODEL || "fal-ai/flux-pro/v1/fill",
@@ -27,10 +30,13 @@ export type EditInput = {
   prompt: string;
   /** fal only: use the masked fill endpoint instead of kontext. */
   useMask?: boolean;
+  /** YouCam picks its API and sliders from the treatment kind, not a prompt. */
+  kind?: SimKind;
 };
 export type EditOutput = { image: string; model: string; ms: number; raw?: unknown };
 
 export function providerConfigured(p: SimProvider) {
+  if (p === "youcam") return youcamConfigured();
   if (p === "gemini") return Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
   if (p === "fal") return Boolean(process.env.FAL_KEY);
   if (p === "openai") return Boolean(process.env.OPENAI_API_KEY);
@@ -39,8 +45,78 @@ export function providerConfigured(p: SimProvider) {
 
 export async function runEdit(p: SimProvider, input: EditInput): Promise<EditOutput> {
   const t0 = Date.now();
-  const out = p === "gemini" ? await gemini(input) : p === "fal" ? await fal(input) : await openai(input);
+  const out =
+    p === "youcam" ? await youcam(input) : p === "gemini" ? await gemini(input) : p === "fal" ? await fal(input) : await openai(input);
   return { ...out, ms: Date.now() - t0 };
+}
+
+/* ---------------- YouCam (Perfect Corp) ---------------- */
+/**
+ * Purpose-built treatment simulators instead of a prompted image model, on the same key as the scan.
+ * Each kind maps to one YouCam API at a fixed, clearly visible strength; the dose slider then blends
+ * back toward the original, and our zone mask still decides which pixels change.
+ * Units per call (docs, Nov 15 2026): Skin Simulation 4 (1–4 concerns), Face Lift 1, Face Reshape 1.
+ */
+const YOUCAM_SIM: Record<SimKind, { path: string; body: Record<string, unknown> }> = {
+  neurotoxin: { path: "/s2s/v2.0/task/skin-simulation", body: { wrinkle: 1 } },
+  under_eye_filler: { path: "/s2s/v2.0/task/skin-simulation", body: { eye_bags: 1, dark_circle: 0.8 } },
+  resurfacing: { path: "/s2s/v2.0/task/skin-simulation", body: { texture: 1, pores: 1, wrinkle: 0.5, acne: 0.7 } },
+  tone: { path: "/s2s/v2.0/task/skin-simulation", body: { spots: 1, redness: 0.9, radiance: 0.4 } },
+  glow: { path: "/s2s/v2.0/task/skin-simulation", body: { radiance: 1, texture: 0.4, redness: 0.3 } },
+  lip_filler: {
+    path: "/s2s/v2.0/task/face-reshape",
+    body: { version: "1.0", features: { lip_size: 65, lip_height_top: 35, lip_height_bottom: 25 }, global: { skin_smooth_strength: 0, skin_smooth_color_intensity: 0 } },
+  },
+  cheek_filler: {
+    path: "/s2s/v2.0/task/face-lift",
+    body: { version: "1.0", type: "custom", features: { cheek: 70, mouth: 45, shape: 25 }, global: { skin_smooth_strength: 0, skin_smooth_color_intensity: 0 } },
+  },
+};
+
+async function youcam(input: EditInput): Promise<Omit<EditOutput, "ms">> {
+  if (!input.kind) throw new Error("YouCam preview needs the treatment kind");
+  const spec = YOUCAM_SIM[input.kind];
+  const model = `${MODELS.youcam}:${spec.path.split("/").pop()}`;
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 100_000);
+  const t0 = Date.now();
+  const render = async (image: string) => {
+    const fileId = await youcamUpload(image, ac.signal);
+    const data = await youcamRunTask(spec.path, { src_file_id: fileId, ...spec.body }, ac.signal, 85_000 - (Date.now() - t0));
+    const results = data.results as { url?: string } | Array<{ url?: string }> | undefined;
+    const url = Array.isArray(results) ? results[0]?.url : results?.url;
+    if (!url) throw new Error("YouCam returned no result image");
+    // download server-side so the browser never talks to YouCam and the 2-hour link can't expire mid-session
+    const imgRes = await fetch(url, { signal: ac.signal });
+    if (!imgRes.ok) throw new Error(`YouCam result download failed (HTTP ${imgRes.status})`);
+    return Buffer.from(await imgRes.arrayBuffer());
+  };
+  try {
+    let out: Buffer;
+    try {
+      out = await render(input.image);
+    } catch (e) {
+      // A close-up selfie can crop the forehead or chin, which the skin simulator rejects as "face out of bound".
+      // Failed tasks cost nothing, so retry once with the photo extended above and below (mirrored edges), then
+      // crop back to the original frame. Width is untouched, so the "face fills 60% of the width" rule still holds.
+      if (!(e instanceof YoucamError && e.code === "error_src_face_out_of_bound")) throw e;
+      const src = Buffer.from(input.image.split(",")[1], "base64");
+      const meta = await sharp(src).metadata();
+      const W = meta.width ?? 0, H = meta.height ?? 0;
+      const pad = Math.round(H * 0.18);
+      const padded = await sharp(src).extend({ top: pad, bottom: pad, extendWith: "mirror" }).jpeg({ quality: 92 }).toBuffer();
+      const res = await render(`data:image/jpeg;base64,${padded.toString("base64")}`);
+      out = await sharp(res).resize(W, H + 2 * pad, { fit: "fill" }).extract({ left: 0, top: pad, width: W, height: H }).jpeg({ quality: 92 }).toBuffer();
+    }
+    const head = out.subarray(0, 4).toString("hex");
+    const mime = head.startsWith("89504e47") ? "image/png" : "image/jpeg";
+    return { image: `data:${mime};base64,${out.toString("base64")}`, model };
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") throw new Error("YouCam took too long to render the preview. Please try again.");
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function splitDataUrl(d: string) {

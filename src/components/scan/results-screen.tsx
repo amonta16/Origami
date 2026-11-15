@@ -3,6 +3,7 @@
 import * as React from "react";
 import { AppBar, BottomSheet, Button, Card, Chip, ScoreRing } from "@/components/ui";
 import { CONCERN_BY_ID, ZONE_LABEL, simKindFor } from "@/lib/concerns";
+import { SIM_PROVIDER_LABEL } from "@/lib/analysis/models";
 import { runSimulation, type SimResult } from "@/lib/sim/client";
 import type { Capture, Clinic, ScanResults, SimProvider, Treatment } from "@/lib/types";
 import { BeforeAfter } from "./before-after";
@@ -46,7 +47,7 @@ export function ResultsScreen({
       const p = localStorage.getItem("facet:model:sim");
       const m = localStorage.getItem("facet:model:sim-mask");
       queueMicrotask(() => {
-        if (p === "auto" || p === "gemini" || p === "fal" || p === "openai") setSimProvider(p);
+        if (p === "auto" || p === "youcam" || p === "gemini" || p === "fal" || p === "openai") setSimProvider(p);
         if (m) setSimMask(m === "1");
       });
     } catch {
@@ -260,7 +261,7 @@ export function ResultsScreen({
         )}
         {sim?.result && !sim.loading && (
           <p className="-mt-2 mb-3 text-[11px] text-ink-muted">
-            Rendered by {sim.result.model || sim.result.provider} in {(sim.result.ms / 1000).toFixed(1)} s
+            Rendered by {SIM_PROVIDER_LABEL[sim.result.provider] ?? sim.result.provider} in {(sim.result.ms / 1000).toFixed(1)} s
           </p>
         )}
         {sim?.loading && (

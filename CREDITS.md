@@ -66,6 +66,8 @@ Every open-source library, API, font and model used in Facet, with its license a
 | Model | Provider | What it does here |
 |---|---|---|
 | MediaPipe Face Landmarker (float16) | Google, on-device | Live 3D face mesh, quality gates, zone masks |
+| YouCam AI Skin Simulation, AI Face Lift, AI Face Reshape (v2.0) | Perfect Corp (same key as the scan, server-side only) | Default "after" preview: each treatment kind maps to one simulator at a fixed strength (wrinkles, texture and pores, spots and redness, radiance, eye bags and dark circles; cheek and mouth lift; lip size). Our zone mask and dose slider still decide what changes. The prompted image models stay as fallback and in the preview's model picker. |
+| sharp 0.35.5 | Apache-2.0 | Server-side padding and cropping of a photo when the skin simulator rejects a tight close-up |
 | YouCam AI Skin Analysis v2.1 | Perfect Corp (paid API, bearer key, server-side only) | Default skin scorer when its key is set: 12 measured concern scores (wrinkles, firmness, pores, texture, hydration, dark circles, eye bags, tear troughs, spots, radiance, redness, breakouts) plus the scanner's traced overlays shown on the results screen. Vision models remain as fallback and in the model picker. |
 | gemini-3.5-flash (default), gemini-3-flash-preview, gemini-3.5-flash-lite, gemini-3.1-flash-lite, gemini-3.1-pro-preview | Google | Skin analysis (JSON schema) with an automatic fallback chain; owner funnel site reading and menu extraction |
 | gemini-3.1-flash-lite, gemini-3.5-flash-lite | Google | Owner funnel type-ahead: proposes med spas matching what the owner types. Every proposal is checked by loading the spa's website before it is shown. |

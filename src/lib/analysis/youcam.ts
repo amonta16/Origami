@@ -86,11 +86,13 @@ type TaskPoll = {
       output?: Array<{ type: string; ui_score?: number; raw_score?: number; mask_urls?: string[] | Record<string, string> | string }>;
       skin_age?: number;
       all?: { score?: number } | number;
+      /** editing tasks (skin simulation, face lift, face reshape): the result image, valid 2 hours */
+      url?: string;
     };
   };
 };
 
-class YoucamError extends Error {
+export class YoucamError extends Error {
   constructor(message: string, readonly code?: string, readonly retryable = false) {
     super(message);
   }
@@ -113,6 +115,11 @@ function apiError(json: { error?: string; error_code?: string }, status: number,
   if (status === 429) return new YoucamError("YouCam is rate-limiting us right now. Try again in a moment.", "TooManyRequests", true);
   if (json.error_code === "CreditInsufficiency") return new YoucamError("The YouCam account is out of analysis credits.", json.error_code);
   return new YoucamError(`YouCam ${step} failed: ${json.error || `HTTP ${status}`}`, json.error_code, status >= 500);
+}
+
+/** Upload a data-URL photo to YouCam's file store; returns the file_id every task takes. Shared by scan and preview. */
+export async function youcamUpload(photo: string, signal: AbortSignal) {
+  return uploadPhoto(photo, signal);
 }
 
 async function uploadPhoto(photo: string, signal: AbortSignal) {
@@ -162,11 +169,26 @@ async function startTask(fileId: string, signal: AbortSignal) {
   return id;
 }
 
-async function pollTask(taskId: string, signal: AbortSignal, budgetMs: number) {
+/**
+ * Start any YouCam task (POST <path>) and poll <path>/<task_id> until it finishes. Returns the
+ * task's `data` on success; photo problems come back as plain-language errors. Used by the
+ * preview's Skin Simulation, Face Lift and Face Reshape calls.
+ */
+export async function youcamRunTask(path: string, body: Record<string, unknown>, signal: AbortSignal, budgetMs: number) {
+  const t0 = Date.now();
+  const res = await fetch(`${BASE}${path}`, { method: "POST", headers: headers(), body: JSON.stringify(body), signal });
+  const json = (await res.json().catch(() => ({}))) as TaskCreate;
+  if (!res.ok) throw apiError(json, res.status, "task");
+  const id = json.data?.task_id;
+  if (!id) throw new YoucamError("YouCam did not return a task id.");
+  return pollTask(id, signal, budgetMs - (Date.now() - t0), path);
+}
+
+async function pollTask(taskId: string, signal: AbortSignal, budgetMs: number, path = "/s2s/v2.1/task/skin-analysis") {
   const started = Date.now();
   let delay = 1200;
   for (;;) {
-    const res = await fetch(`${BASE}/s2s/v2.1/task/skin-analysis/${encodeURIComponent(taskId)}`, { headers: headers(false), signal, cache: "no-store" });
+    const res = await fetch(`${BASE}${path}/${encodeURIComponent(taskId)}`, { headers: headers(false), signal, cache: "no-store" });
     const json = (await res.json().catch(() => ({}))) as TaskPoll;
     if (!res.ok) throw apiError(json, res.status, "status");
     const st = (json.data?.task_status || "").toLowerCase();

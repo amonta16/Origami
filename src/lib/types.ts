@@ -194,7 +194,7 @@ export type Capture = {
   source: "camera" | "upload";
 };
 
-export type SimProvider = "gemini" | "fal" | "openai";
+export type SimProvider = "youcam" | "gemini" | "fal" | "openai";
 
 export type SimKind =
   | "neurotoxin"

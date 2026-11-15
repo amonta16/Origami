@@ -20,7 +20,8 @@ type Body = {
   clinicSlug?: string;
 };
 
-const ORDER: SimProvider[] = ["gemini", "fal", "openai"];
+// YouCam first: purpose-built treatment simulators on the same key as the scan.
+const ORDER: SimProvider[] = ["youcam", "gemini", "fal", "openai"];
 
 export function GET() {
   return NextResponse.json({
@@ -88,6 +89,7 @@ export async function POST(req: Request) {
         maskBW: body.useMask ? body.maskBW ?? null : null,
         useMask: Boolean(body.useMask),
         prompt,
+        kind: body.kind,
       });
       await logRun({ provider, model_served: out.model, ok: true, ms: out.ms });
       return NextResponse.json({

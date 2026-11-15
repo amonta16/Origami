@@ -17,7 +17,8 @@ export const ANALYSIS_MODELS: AnalysisModel[] = [
   { id: "gpt-6.1-terra", provider: "openai", label: "GPT-6.1 Terra", note: "OpenAI · needs credits" },
 ];
 
-export const SIM_PROVIDER_LABEL: Record<"gemini" | "fal" | "openai", string> = {
+export const SIM_PROVIDER_LABEL: Record<"youcam" | "gemini" | "fal" | "openai", string> = {
+  youcam: "YouCam",
   gemini: "Nano Banana",
   fal: "FLUX Kontext",
   openai: "GPT Image 2.5",
