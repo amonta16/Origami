@@ -42,6 +42,8 @@ Every open-source library, API, font and model used in Facet, with its license a
 | Name | What it does here |
 |---|---|
 | [Supabase](https://supabase.com) | Postgres, Auth, Storage, Row Level Security |
+| [pg_cron](https://github.com/citusdata/pg_cron) (PostgreSQL License) + [pg_net](https://github.com/supabase/pg_net) (Apache-2.0), Supabase extensions | Hourly call that deletes scan photos past their 72-hour window |
+| [Vercel Cron](https://vercel.com/docs/cron-jobs) | Daily backup call of the same photo cleanup |
 | [Vercel](https://vercel.com) | Hosting and deploys |
 
 ## AI tools used to build

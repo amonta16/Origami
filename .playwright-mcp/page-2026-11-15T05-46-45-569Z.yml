@@ -1,0 +1,210 @@
+- generic [active] [ref=f4e1]:
+  - generic [ref=f4e2]:
+    - generic [ref=f4e3]:
+      - banner [ref=f4e4]:
+        - generic [ref=f4e5]: Shop
+        - generic [ref=f4e7]:
+          - generic [ref=f4e8]: Sample clinic
+          - link "Search treatments" [ref=f4e9] [cursor=pointer]:
+            - /url: /s/sample/shop?tab=treatments
+          - link "My requests" [ref=f4e13] [cursor=pointer]:
+            - /url: /s/sample/profile#requests
+      - navigation "Sections" [ref=f4e17]:
+        - link "Browse" [ref=f4e18] [cursor=pointer]:
+          - /url: /s/sample/shop
+        - link "Memberships" [ref=f4e19] [cursor=pointer]:
+          - /url: /s/sample/shop?tab=memberships
+        - link "Treatments" [ref=f4e20] [cursor=pointer]:
+          - /url: /s/sample/shop?tab=treatments
+      - generic [ref=f4e21]:
+        - generic [ref=f4e23]:
+          - paragraph [ref=f4e24]: Members pay less.Every visit earns points.
+          - paragraph [ref=f4e25]: Member pricing, rewards and perks.
+          - link "How does it work?" [ref=f4e26] [cursor=pointer]:
+            - /url: /s/sample/shop?tab=memberships
+        - generic [ref=f4e27]:
+          - link "Injectables" [ref=f4e28] [cursor=pointer]:
+            - /url: /s/sample/shop?tab=treatments&cat=injectables
+          - link "Skin" [ref=f4e32] [cursor=pointer]:
+            - /url: /s/sample/shop?tab=treatments&cat=skin
+          - link "Laser" [ref=f4e37] [cursor=pointer]:
+            - /url: /s/sample/shop?tab=treatments&cat=laser
+        - generic [ref=f4e43]:
+          - link [ref=f4e44] [cursor=pointer]:
+            - /url: /s/sample/t/85f8ebb4-2a01-48eb-821c-56d38c6f5cd6
+            - img "Neurotoxin (Botox / Dysport)" [ref=f4e45]
+            - paragraph [ref=f4e46]: Neurotoxin (Botox / Dysport)
+            - paragraph [ref=f4e47]: From $480
+          - link [ref=f4e48] [cursor=pointer]:
+            - /url: /s/sample/t/5d0deccb-f271-47fa-8754-7f6adeab7cdb
+            - img "Lip filler" [ref=f4e49]
+            - paragraph [ref=f4e50]: Lip filler
+            - paragraph [ref=f4e51]: From $750
+          - link [ref=f4e52] [cursor=pointer]:
+            - /url: /s/sample/t/d38b32b9-0ce9-48d6-a9a1-faf69e1c5a48
+            - img "Microneedling" [ref=f4e53]
+            - paragraph [ref=f4e54]: Microneedling
+            - paragraph [ref=f4e55]: From $350
+          - link [ref=f4e56] [cursor=pointer]:
+            - /url: /s/sample/t/fd431717-06e3-40fd-8f16-c914ae462db7
+            - img "Signature hydrating facial" [ref=f4e57]
+            - paragraph [ref=f4e58]: Signature hydrating facial
+            - paragraph [ref=f4e59]: From $225
+          - link [ref=f4e60] [cursor=pointer]:
+            - /url: /s/sample/t/d2921782-5682-4a9c-8ea9-3312ea4f749c
+            - img "Under-eye filler" [ref=f4e61]
+            - paragraph [ref=f4e62]: Under-eye filler
+            - paragraph [ref=f4e63]: From $900
+          - link [ref=f4e64] [cursor=pointer]:
+            - /url: /s/sample/t/bd151f2a-2688-4577-91b0-7ca57088539e
+            - img "Cheek filler" [ref=f4e65]
+            - paragraph [ref=f4e66]: Cheek filler
+            - paragraph [ref=f4e67]: From $950
+          - link [ref=f4e68] [cursor=pointer]:
+            - /url: /s/sample/t/13f436e1-e7a5-418e-9128-e1295c509e1a
+            - img "Chemical peel" [ref=f4e69]
+            - paragraph [ref=f4e70]: Chemical peel
+            - paragraph [ref=f4e71]: From $225
+          - link [ref=f4e72] [cursor=pointer]:
+            - /url: /s/sample/t/497492f9-3458-461e-8a98-7faa83d52b71
+            - img "IPL photofacial" [ref=f4e73]
+            - paragraph [ref=f4e74]: IPL photofacial
+            - paragraph [ref=f4e75]: From $450
+          - link [ref=f4e76] [cursor=pointer]:
+            - /url: /s/sample/t/c25dd8ca-593f-4576-b932-ac73b1bdc6de
+            - img "Laser resurfacing" [ref=f4e77]
+            - paragraph [ref=f4e78]: Laser resurfacing
+            - paragraph [ref=f4e79]: From $1,500
+          - link [ref=f4e80] [cursor=pointer]:
+            - /url: /s/sample/t/c4b772ce-9399-4e09-b126-c257532d965a
+            - img "Medical-grade skincare plan" [ref=f4e81]
+            - paragraph [ref=f4e82]: Medical-grade skincare plan
+            - paragraph [ref=f4e83]: From $180
+        - generic [ref=f4e84]:
+          - heading "Packages" [level=2] [ref=f4e86]
+          - list [ref=f4e87]:
+            - listitem [ref=f4e88]:
+              - button [ref=f4e89]:
+                - img "Microneedling series" [ref=f4e90]
+                - paragraph [ref=f4e91]: Microneedling series
+                - paragraph [ref=f4e92]: $900
+            - listitem [ref=f4e93]:
+              - button [ref=f4e94]:
+                - img "Clear-skin peel series" [ref=f4e95]
+                - paragraph [ref=f4e96]: Clear-skin peel series
+                - paragraph [ref=f4e97]: $760
+            - listitem [ref=f4e98]:
+              - button [ref=f4e99]:
+                - img "IPL photofacial series" [ref=f4e100]
+                - paragraph [ref=f4e101]: IPL photofacial series
+                - paragraph [ref=f4e102]: $1,150
+            - listitem [ref=f4e103]:
+              - button [ref=f4e104]:
+                - img "Facial of the month" [ref=f4e105]
+                - paragraph [ref=f4e106]: Facial of the month
+                - paragraph [ref=f4e107]: $1,200
+        - generic [ref=f4e108]:
+          - heading "Skincare" [level=2] [ref=f4e110]
+          - list [ref=f4e111]:
+            - listitem [ref=f4e112]:
+              - button [ref=f4e113]:
+                - img "Mineral sunscreen SPF 46" [ref=f4e114]
+                - paragraph [ref=f4e115]: Mineral sunscreen SPF 46
+                - paragraph [ref=f4e116]: $44
+            - listitem [ref=f4e117]:
+              - button [ref=f4e118]:
+                - img "Vitamin C serum" [ref=f4e119]
+                - paragraph [ref=f4e120]: Vitamin C serum
+                - paragraph [ref=f4e121]: $169
+            - listitem [ref=f4e122]:
+              - button [ref=f4e123]:
+                - img "Retinol 0.5 night cream" [ref=f4e124]
+                - paragraph [ref=f4e125]: Retinol 0.5 night cream
+                - paragraph [ref=f4e126]: $98
+            - listitem [ref=f4e127]:
+              - button [ref=f4e128]:
+                - img "Barrier repair moisturizer" [ref=f4e129]
+                - paragraph [ref=f4e130]: Barrier repair moisturizer
+                - paragraph [ref=f4e131]: $62
+        - generic [ref=f4e132]:
+          - heading "Gift cards" [level=2] [ref=f4e134]
+          - list [ref=f4e135]:
+            - listitem [ref=f4e136]:
+              - button [ref=f4e137]:
+                - img "Sample Aesthetics gift card" [ref=f4e138]:
+                  - generic [ref=f4e141]: Sample Aesthetics
+                  - generic [ref=f4e142]:
+                    - generic [ref=f4e143]: Gift card
+                    - generic [ref=f4e144]: $100
+                - paragraph [ref=f4e145]: Gift card · $100
+                - paragraph [ref=f4e146]: $100
+            - listitem [ref=f4e147]:
+              - button [ref=f4e148]:
+                - img "Sample Aesthetics gift card" [ref=f4e149]:
+                  - generic [ref=f4e152]: Sample Aesthetics
+                  - generic [ref=f4e153]:
+                    - generic [ref=f4e154]: Gift card
+                    - generic [ref=f4e155]: $250
+                - paragraph [ref=f4e156]: Gift card · $250
+                - paragraph [ref=f4e157]: $250
+            - listitem [ref=f4e158]:
+              - button [ref=f4e159]:
+                - img "Sample Aesthetics gift card" [ref=f4e160]:
+                  - generic [ref=f4e163]: Sample Aesthetics
+                  - generic [ref=f4e164]:
+                    - generic [ref=f4e165]: Gift card
+                    - generic [ref=f4e166]: $500
+                - paragraph [ref=f4e167]: Gift card · $500
+                - paragraph [ref=f4e168]: $500
+        - paragraph [ref=f4e169]:
+          - text: Requests go to the front desk. Nothing is charged in the app. Some photos are stock images.
+          - link "Terms" [ref=f4e170] [cursor=pointer]:
+            - /url: /s/sample/legal
+    - navigation "App" [ref=f4e171]:
+      - list [ref=f4e172]:
+        - listitem [ref=f4e173]:
+          - link "Home" [ref=f4e174] [cursor=pointer]:
+            - /url: /s/sample
+        - listitem [ref=f4e178]:
+          - link "Shop" [ref=f4e179] [cursor=pointer]:
+            - /url: /s/sample/shop
+        - listitem [ref=f4e184]:
+          - link "Scan" [ref=f4e185] [cursor=pointer]:
+            - /url: /s/sample/visit
+        - listitem [ref=f4e192]:
+          - link "Rewards" [ref=f4e193] [cursor=pointer]:
+            - /url: /s/sample/rewards
+        - listitem [ref=f4e198]:
+          - link "Profile" [ref=f4e199] [cursor=pointer]:
+            - /url: /s/sample/profile
+    - generic [aria-hidden]:
+      - button
+      - dialog:
+        - heading [level=2]: Join Sample Aesthetics
+        - generic:
+          - paragraph: Your card holds your points, rewards and check-in code. You start with 100 points.
+          - generic:
+            - generic: First name
+            - textbox
+          - generic:
+            - generic: Mobile number
+            - textbox:
+              - /placeholder: (805) 555-0123
+          - generic:
+            - checkbox
+            - generic: I’m 18 or older.
+          - generic:
+            - checkbox
+            - generic: Text me appointment reminders and offers from Sample Aesthetics. Optional. Reply STOP anytime.
+          - button [disabled]:
+            - generic: Join and get 100 points
+          - paragraph: Origami is a student hackathon project. We keep your first name and number for Sample Aesthetics only, never sell them, and never ask for payment details in the app.
+    - generic [aria-hidden]:
+      - button
+      - dialog
+    - generic [aria-hidden]:
+      - button
+      - dialog:
+        - button:
+          - generic: Done
+  - alert [ref=f4e204]

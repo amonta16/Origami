@@ -1,0 +1,62 @@
+- generic [active] [ref=f8e1]:
+  - main [ref=f8e2]:
+    - generic [ref=f8e3]:
+      - generic [ref=f8e5]:
+        - link "Origami" [ref=f8e6] [cursor=pointer]:
+          - /url: /
+        - navigation [ref=f8e8]:
+          - link "See the front desk" [ref=f8e9] [cursor=pointer]:
+            - /url: /desk/sample
+          - link "See a sample app" [ref=f8e10] [cursor=pointer]:
+            - /url: /s/sample
+      - generic [ref=f8e11]:
+        - paragraph [ref=f8e12]:
+          - generic [ref=f8e13]: New
+          - text: For med spa owners
+        - heading "Your spa’s own app, built in under a minute." [level=1] [ref=f8e14]
+        - paragraph [ref=f8e15]: Type your spa’s name. We read your website for your name, colors, photos and real menu, then patients scan their face, book, and come back when it’s due.
+        - generic [ref=f8e17]:
+          - generic [ref=f8e19]:
+            - generic [ref=f8e20]:
+              - generic [ref=f8e24]: Your med spa’s name
+              - combobox "Your med spa’s name" [ref=f8e25]
+            - button "Build my app" [disabled]
+          - button "Know your website? Add it for a faster match." [ref=f8e26]
+        - list [ref=f8e27]:
+          - listitem [ref=f8e28]: Built from your website
+          - listitem [ref=f8e31]: Works on any phone
+          - listitem [ref=f8e34]: No card needed
+        - paragraph [ref=f8e37]: Powered by Atlas Engine
+    - generic [ref=f8e38]:
+      - generic [ref=f8e39]:
+        - paragraph [ref=f8e67]: Built from what's already yours
+        - paragraph [ref=f8e68]: We read your public website for your menu, photos and colors. You fix anything in a click.
+      - generic [ref=f8e69]:
+        - generic [ref=f8e71]:
+          - generic [ref=f8e109]: SCANNING
+          - generic [ref=f8e110]: Fine lines · mild
+          - generic [ref=f8e111]: "Matched: Neurotoxin"
+          - generic [ref=f8e113]: Example photo · Unsplash
+        - paragraph [ref=f8e114]: An AI face scan that sells
+        - paragraph [ref=f8e115]: Each patient sees a realistic preview of your treatments on their own face, then books.
+      - generic [ref=f8e116]:
+        - generic [aria-hidden] [ref=f8e117]:
+          - generic [ref=f8e118]:
+            - generic [ref=f8e119]: Mon
+            - generic [ref=f8e120]: Tue
+            - generic [ref=f8e121]: Wed
+            - generic [ref=f8e122]: Thu
+            - generic [ref=f8e123]: Fri
+          - generic [ref=f8e124]:
+            - generic [ref=f8e125]: Botox
+            - generic [ref=f8e128]: Facial
+            - generic [ref=f8e133]: Filler
+            - generic [ref=f8e136]: Peel
+            - generic [ref=f8e139]: IPL
+            - generic [ref=f8e143]: Facial
+            - generic [ref=f8e145]: Botox
+          - generic [ref=f8e147]: Touch-up reminder sent
+        - paragraph [ref=f8e150]: A front desk that fills slow days
+        - paragraph [ref=f8e151]: Check-ins, points, memberships and who's due for a touch-up, in one place.
+    - generic [ref=f8e152]: Origami is built by Atlas Engine, a student team at the CPVC × OCOB × CPE AI Hackathon, Cal Poly, Nov 13–15, 2026. Previews are private links, built only from public website content, and labeled “Preview” until a spa chooses to go live.
+  - alert [ref=f8e153]

@@ -1,0 +1,241 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - banner [ref=e4]:
+        - generic [ref=e5]: Sample Aesthetics
+        - generic [ref=e7]:
+          - generic [ref=e8]: Sample clinic
+          - link "Search treatments" [ref=e9] [cursor=pointer]:
+            - /url: /s/sample/shop?tab=treatments
+          - link "My requests" [ref=e13] [cursor=pointer]:
+            - /url: /s/sample/profile#requests
+      - generic [ref=e17]:
+        - generic [ref=e20]:
+          - heading "Welcome to Sample Aesthetics" [level=1] [ref=e21]
+          - paragraph [ref=e22]: Sample Aesthetics
+        - button "0 Sample Aesthetics points Not a member" [ref=e24]:
+          - generic [ref=e25]: "0"
+          - generic [ref=e26]: Sample Aesthetics points
+          - generic [ref=e27]: Not a member
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - heading "A gift for you" [level=2] [ref=e32]
+          - generic [ref=e33]: Claim by Nov 21
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - paragraph [ref=e41]: WELCOME GIFT
+            - paragraph [ref=e42]: $25 off your first purchase
+            - paragraph [ref=e43]: Our thank-you for joining. Use it on any treatment or product at Sample Aesthetics.
+          - 'button "Unwrap your gift: welcome gift" [ref=e44]':
+            - generic [ref=e86]: For you
+            - generic [ref=e87]: Scratch to unwrap
+      - generic [ref=e89]:
+        - heading "Popular right now" [level=2] [ref=e90]
+        - generic [ref=e91]:
+          - link [ref=e92] [cursor=pointer]:
+            - /url: /s/sample/t/85f8ebb4-2a01-48eb-821c-56d38c6f5cd6
+            - img "Neurotoxin (Botox / Dysport)" [ref=e93]
+            - paragraph [ref=e94]: Neurotoxin (Botox / Dysport)
+            - paragraph [ref=e95]: From $480
+          - link [ref=e96] [cursor=pointer]:
+            - /url: /s/sample/t/5d0deccb-f271-47fa-8754-7f6adeab7cdb
+            - img "Lip filler" [ref=e97]
+            - paragraph [ref=e98]: Lip filler
+            - paragraph [ref=e99]: From $750
+          - link [ref=e100] [cursor=pointer]:
+            - /url: /s/sample/t/d38b32b9-0ce9-48d6-a9a1-faf69e1c5a48
+            - img "Microneedling" [ref=e101]
+            - paragraph [ref=e102]: Microneedling
+            - paragraph [ref=e103]: From $350
+          - link [ref=e104] [cursor=pointer]:
+            - /url: /s/sample/t/fd431717-06e3-40fd-8f16-c914ae462db7
+            - img "Signature hydrating facial" [ref=e105]
+            - paragraph [ref=e106]: Signature hydrating facial
+            - paragraph [ref=e107]: From $225
+      - link "Points Earn 50 points every visit. Show your code at check-in, spend them on rewards." [ref=e109] [cursor=pointer]:
+        - /url: /s/sample/rewards
+        - generic [ref=e110]: Points
+        - generic [ref=e111]:
+          - generic [ref=e112]: Earn 50 points every visit.
+          - generic [ref=e113]: Show your code at check-in, spend them on rewards.
+      - generic [ref=e115]:
+        - paragraph [ref=e116]: Save more as a Sample Aesthetics member
+        - paragraph [ref=e117]: Treatments every month. Member pricing. Members-only perks.
+        - link "See benefits" [ref=e118] [cursor=pointer]:
+          - /url: /s/sample/shop?tab=memberships
+      - generic [ref=e119]:
+        - generic [ref=e120]:
+          - heading "Rewards" [level=2] [ref=e121]
+          - link "See more" [ref=e122] [cursor=pointer]:
+            - /url: /s/sample/rewards
+        - list [ref=e125]:
+          - listitem [ref=e126]:
+            - link [ref=e127] [cursor=pointer]:
+              - /url: /s/sample/rewards
+              - generic [ref=e132]:
+                - generic [ref=e133]: 150 POINTS
+                - paragraph [ref=e137]: Free LED add-on
+          - listitem [ref=e138]:
+            - link [ref=e139] [cursor=pointer]:
+              - /url: /s/sample/rewards
+              - generic [ref=e144]:
+                - generic [ref=e145]: 300 POINTS
+                - paragraph [ref=e149]: $25 off any treatment
+          - listitem [ref=e150]:
+            - link [ref=e151] [cursor=pointer]:
+              - /url: /s/sample/rewards
+              - generic [ref=e156]:
+                - generic [ref=e157]: 1,200 POINTS
+                - paragraph [ref=e161]: Free signature facial
+          - listitem [ref=e162]:
+            - link [ref=e163] [cursor=pointer]:
+              - /url: /s/sample/rewards
+              - generic [ref=e168]:
+                - generic [ref=e169]: 3,000 POINTS
+                - paragraph [ref=e173]: 20 units of neurotoxin
+      - link "Book your next visit Online, by text, or give us a call" [ref=e175] [cursor=pointer]:
+        - /url: https://example.com/book
+        - generic [ref=e180]:
+          - generic [ref=e181]: Book your next visit
+          - generic [ref=e182]: Online, by text, or give us a call
+      - generic [ref=e185]:
+        - heading "Educate yourself" [level=2] [ref=e186]
+        - paragraph [ref=e187]: Know what your skin needs, then how each treatment works.
+        - generic [ref=e189]:
+          - generic [ref=e190]:
+            - img "Example face for the skin analysis" [ref=e191]
+            - generic [ref=e228]: BEFORE
+            - generic [ref=e229]: Fine lines
+            - generic [ref=e231]: Example photo · Unsplash
+          - generic [ref=e233]:
+            - paragraph [ref=e234]: FREE SKIN ANALYSIS
+            - heading "What is your skin asking for?" [level=3] [ref=e235]
+            - paragraph [ref=e236]: One selfie. Your skin score, what to treat first, and a preview of your results with Sample Aesthetics.
+            - link "Start the 1-minute scan" [ref=e237] [cursor=pointer]:
+              - /url: /s/sample/scan
+      - list [ref=e241]:
+        - listitem [ref=e242]:
+          - link "Under-eye filler INJECTABLES Under-eye filler Fills the tear trough to soften hollows and the shadows that read as dark circles. How it works" [ref=e243] [cursor=pointer]:
+            - /url: /s/sample/t/d2921782-5682-4a9c-8ea9-3312ea4f749c
+            - img "Under-eye filler" [ref=e244]
+            - generic [ref=e245]:
+              - generic [ref=e246]: INJECTABLES
+              - paragraph [ref=e247]: Under-eye filler
+              - paragraph [ref=e248]: Fills the tear trough to soften hollows and the shadows that read as dark circles.
+              - paragraph [ref=e249]: How it works
+        - listitem [ref=e252]:
+          - link "Cheek filler INJECTABLES Cheek filler Restores mid-face volume and lift, which also softens nasolabial folds. How it works" [ref=e253] [cursor=pointer]:
+            - /url: /s/sample/t/bd151f2a-2688-4577-91b0-7ca57088539e
+            - img "Cheek filler" [ref=e254]
+            - generic [ref=e255]:
+              - generic [ref=e256]: INJECTABLES
+              - paragraph [ref=e257]: Cheek filler
+              - paragraph [ref=e258]: Restores mid-face volume and lift, which also softens nasolabial folds.
+              - paragraph [ref=e259]: How it works
+        - listitem [ref=e262]:
+          - link "Chemical peel SKIN Chemical peel Medical-grade peel for uneven tone, dullness, sun damage and breakouts. Light peeling for 3 to 5 days. How it works" [ref=e263] [cursor=pointer]:
+            - /url: /s/sample/t/13f436e1-e7a5-418e-9128-e1295c509e1a
+            - img "Chemical peel" [ref=e264]
+            - generic [ref=e265]:
+              - generic [ref=e266]: SKIN
+              - paragraph [ref=e267]: Chemical peel
+              - paragraph [ref=e268]: Medical-grade peel for uneven tone, dullness, sun damage and breakouts. Light peeling for 3 to 5 days.
+              - paragraph [ref=e269]: How it works
+        - listitem [ref=e272]:
+          - link "IPL photofacial LASER IPL photofacial Light-based treatment for sun spots, redness and broken capillaries. Best in a series of three. How it works" [ref=e273] [cursor=pointer]:
+            - /url: /s/sample/t/497492f9-3458-461e-8a98-7faa83d52b71
+            - img "IPL photofacial" [ref=e274]
+            - generic [ref=e275]:
+              - generic [ref=e276]: LASER
+              - paragraph [ref=e277]: IPL photofacial
+              - paragraph [ref=e278]: Light-based treatment for sun spots, redness and broken capillaries. Best in a series of three.
+              - paragraph [ref=e279]: How it works
+        - listitem [ref=e282]:
+          - link "Laser resurfacing LASER Laser resurfacing Fractional laser for deeper lines, texture and scarring. A week of downtime, months of results. How it works" [ref=e283] [cursor=pointer]:
+            - /url: /s/sample/t/c25dd8ca-593f-4576-b932-ac73b1bdc6de
+            - img "Laser resurfacing" [ref=e284]
+            - generic [ref=e285]:
+              - generic [ref=e286]: LASER
+              - paragraph [ref=e287]: Laser resurfacing
+              - paragraph [ref=e288]: Fractional laser for deeper lines, texture and scarring. A week of downtime, months of results.
+              - paragraph [ref=e289]: How it works
+        - listitem [ref=e292]:
+          - link "Medical-grade skincare plan CONSULT Medical-grade skincare plan A prescription-strength routine (retinoid, antioxidant, SPF) chosen from your scan. Refills every 90 days. How it works" [ref=e293] [cursor=pointer]:
+            - /url: /s/sample/t/c4b772ce-9399-4e09-b126-c257532d965a
+            - img "Medical-grade skincare plan" [ref=e294]
+            - generic [ref=e295]:
+              - generic [ref=e296]: CONSULT
+              - paragraph [ref=e297]: Medical-grade skincare plan
+              - paragraph [ref=e298]: A prescription-strength routine (retinoid, antioxidant, SPF) chosen from your scan. Refills every 90 days.
+              - paragraph [ref=e299]: How it works
+      - generic [ref=e302]:
+        - heading "About us" [level=2] [ref=e304]
+        - paragraph [ref=e305]: Sample Aesthetics is a fictional med spa used to demo Facet. Its menu, prices and plans are typical of a California med spa, not a real offer.
+        - generic [ref=e306]:
+          - iframe [ref=e308]:
+            - link "Open in Maps (opens in new tab)" [ref=f2e4] [cursor=pointer]:
+              - /url: about:invalid#zClosurez
+              - text: Open in Maps
+          - generic [ref=e309]:
+            - paragraph [ref=e310]: Sample Aesthetics
+            - paragraph [ref=e311]: State St & Canon Perdido St, Santa Barbara, CA 93101
+        - link "Call now" [ref=e315] [cursor=pointer]:
+          - /url: tel:8055550100
+      - generic [ref=e317]:
+        - generic [ref=e318]:
+          - generic [ref=e319]: See the clinic’s side
+          - generic [ref=e320]: Check-ins, orders, who’s due and the App Builder for this sample spa.
+        - link "Front desk" [ref=e321] [cursor=pointer]:
+          - /url: /desk/sample
+      - paragraph [ref=e322]:
+        - text: Sample clinic for demos. Prices are typical, not a real offer. Some photos are stock images, not taken at Sample Aesthetics. Skin analysis results are cosmetic estimates, not a medical diagnosis. 18+.
+        - link "Privacy and terms" [ref=e323] [cursor=pointer]:
+          - /url: /s/sample/legal
+    - navigation "App" [ref=e324]:
+      - list [ref=e325]:
+        - listitem [ref=e326]:
+          - link "Home" [ref=e327] [cursor=pointer]:
+            - /url: /s/sample
+        - listitem [ref=e331]:
+          - link "Shop" [ref=e332] [cursor=pointer]:
+            - /url: /s/sample/shop
+        - listitem [ref=e337]:
+          - link "Scan" [ref=e338] [cursor=pointer]:
+            - /url: /s/sample/visit
+        - listitem [ref=e345]:
+          - link "Rewards" [ref=e346] [cursor=pointer]:
+            - /url: /s/sample/rewards
+        - listitem [ref=e351]:
+          - link "Profile" [ref=e352] [cursor=pointer]:
+            - /url: /s/sample/profile
+    - generic [aria-hidden]:
+      - button
+      - dialog:
+        - heading [level=2]: Join Sample Aesthetics
+        - generic:
+          - paragraph: Your card holds your points, rewards and check-in code. You start with 100 points.
+          - generic:
+            - generic: First name
+            - textbox
+          - generic:
+            - generic: Mobile number
+            - textbox:
+              - /placeholder: (805) 555-0123
+          - generic:
+            - checkbox
+            - generic: I’m 18 or older.
+          - generic:
+            - checkbox
+            - generic: Text me appointment reminders and offers from Sample Aesthetics. Optional. Reply STOP anytime.
+          - button [disabled]:
+            - generic: Join and get 100 points
+          - paragraph: Origami is a student hackathon project. We keep your first name and number for Sample Aesthetics only, never sell them, and never ask for payment details in the app.
+    - generic [aria-hidden]:
+      - button
+      - dialog
+    - generic [aria-hidden]:
+      - button
+      - dialog:
+        - button:
+          - generic: Done
+  - alert [ref=e357]
