@@ -76,6 +76,13 @@ export function OwnerFunnel() {
       setLooking(false);
       return;
     }
+    // While the lookup runs, keep showing what a shorter query already found, if it still fits
+    // ("citrine an" found Citrine + Sage; typing on to "citrine and s" keeps it on screen).
+    const sq = squashName(text);
+    const fits = (s: SpaSuggestion) => squashName(s.name).includes(sq) || squashName(s.host).includes(sq);
+    let prefix = "";
+    for (const k of cache.current.keys()) if (key.startsWith(k) && k.length > prefix.length) prefix = k;
+    setSugs((cur) => (prefix ? cache.current.get(prefix)! : cur).filter(fits));
     setLooking(true);
     timer.current = setTimeout(async () => {
       const ctl = new AbortController();
@@ -84,7 +91,7 @@ export function OwnerFunnel() {
         const r = await fetch(`/api/build/suggest?q=${encodeURIComponent(text)}`, { signal: ctl.signal });
         const j = (await r.json()) as { suggestions?: SpaSuggestion[] };
         const list = j.suggestions ?? [];
-        if (r.ok) cache.current.set(key, list);
+        if (r.ok && list.length) cache.current.set(key, list); // a miss is asked again next time
         setSugs(list);
         setLookedFor(text);
         setLooking(false);
@@ -94,7 +101,7 @@ export function OwnerFunnel() {
           setLookedFor(text);
         }
       }
-    }, 420);
+    }, 300);
   };
 
   const run = async (e?: React.FormEvent) => {
@@ -358,6 +365,11 @@ export function OwnerFunnel() {
 }
 
 /* ------------------------------------------------------------ suggestion bits */
+
+/** "Citrine + Sage" → "citrineandsage", so typed text and names compare without spaces or symbols. */
+function squashName(s: string) {
+  return s.toLowerCase().replace(/&|\+/g, "and").replace(/[^a-z0-9]+/g, "");
+}
 
 /** The spa's own site icon, or its first letter when the icon is missing or broken. */
 function SpaIcon({ s, size }: { s: SpaSuggestion; size: number }) {

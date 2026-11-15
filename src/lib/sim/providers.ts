@@ -110,17 +110,39 @@ async function youcam(input: EditInput): Promise<Omit<EditOutput, "ms">> {
     try {
       out = await render(input.image);
     } catch (e) {
-      // A close-up selfie can crop the forehead or chin, which the skin simulator rejects as "face out of bound".
-      // Failed tasks cost nothing, so retry once with the photo extended above and below (mirrored edges), then
-      // crop back to the original frame. Width is untouched, so the "face fills 60% of the width" rule still holds.
-      if (!(e instanceof YoucamError && e.code === "error_src_face_out_of_bound")) throw e;
+      if (!(e instanceof YoucamError)) throw e;
       const src = Buffer.from(input.image.split(",")[1], "base64");
-      const meta = await sharp(src).metadata();
-      const W = meta.width ?? 0, H = meta.height ?? 0;
-      const pad = Math.round(H * 0.18);
-      const padded = await sharp(src).extend({ top: pad, bottom: pad, extendWith: "mirror" }).jpeg({ quality: 92 }).toBuffer();
-      const res = await render(`data:image/jpeg;base64,${padded.toString("base64")}`);
-      out = await sharp(res).resize(W, H + 2 * pad, { fit: "fill" }).extract({ left: 0, top: pad, width: W, height: H }).jpeg({ quality: 92 }).toBuffer();
+      if (e.code === "error_lighting_dark") {
+        // Indoor phone selfies are often "too dark" for the simulator while the scan itself went fine.
+        // Failed tasks cost nothing, so retry with the photo brightened by a gamma curve, then put the
+        // exact inverse curve on the result: the "after" keeps the original exposure, so the preview never
+        // looks better just because it is brighter.
+        let last: unknown = e;
+        let fixed: Buffer | null = null;
+        for (const target of [0.5, 0.62]) {
+          try {
+            const { buf, p } = await gammaToMean(src, target);
+            const res = await render(`data:image/jpeg;base64,${buf.toString("base64")}`);
+            fixed = await applyGamma(res, 1 / p);
+            break;
+          } catch (e2) {
+            last = e2;
+            if (!(e2 instanceof YoucamError && e2.code === "error_lighting_dark")) break;
+          }
+        }
+        if (!fixed) throw last;
+        out = fixed;
+      } else if (e.code === "error_src_face_out_of_bound") {
+        // A close-up selfie can crop the forehead or chin, which the skin simulator rejects as "face out of bound".
+        // Retry once with the photo extended above and below (mirrored edges), then crop back to the original
+        // frame. Width is untouched, so the "face fills 60% of the width" rule still holds.
+        const meta = await sharp(src).metadata();
+        const W = meta.width ?? 0, H = meta.height ?? 0;
+        const pad = Math.round(H * 0.18);
+        const padded = await sharp(src).extend({ top: pad, bottom: pad, extendWith: "mirror" }).jpeg({ quality: 92 }).toBuffer();
+        const res = await render(`data:image/jpeg;base64,${padded.toString("base64")}`);
+        out = await sharp(res).resize(W, H + 2 * pad, { fit: "fill" }).extract({ left: 0, top: pad, width: W, height: H }).jpeg({ quality: 92 }).toBuffer();
+      } else throw e;
     }
     const head = out.subarray(0, 4).toString("hex");
     const mime = head.startsWith("89504e47") ? "image/png" : "image/jpeg";
@@ -131,6 +153,23 @@ async function youcam(input: EditInput): Promise<Omit<EditOutput, "ms">> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Every channel through v → 255·(v/255)^p, as a JPEG. */
+async function applyGamma(img: Buffer, p: number) {
+  const { data, info } = await sharp(img).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const lut = new Uint8Array(256);
+  for (let v = 0; v < 256; v++) lut[v] = Math.round(255 * (v / 255) ** p);
+  for (let i = 0; i < data.length; i++) data[i] = lut[data[i]];
+  return sharp(data, { raw: { width: info.width, height: info.height, channels: info.channels } }).jpeg({ quality: 93 }).toBuffer();
+}
+
+/** Brighten with one gamma curve so the photo's mean level lands on `target` (0..1); returns the exponent used. */
+async function gammaToMean(img: Buffer, target: number) {
+  const { channels } = await sharp(img).stats();
+  const mean = Math.max(0.02, Math.min(0.98, channels.slice(0, 3).reduce((s, c) => s + c.mean, 0) / 3 / 255));
+  const p = Math.max(0.35, Math.min(0.9, Math.log(target) / Math.log(mean)));
+  return { buf: await applyGamma(img, p), p };
 }
 
 function splitDataUrl(d: string) {

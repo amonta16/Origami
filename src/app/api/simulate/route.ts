@@ -4,6 +4,7 @@ import { MODELS, providerConfigured, runEdit } from "@/lib/sim/providers";
 import type { SimKind, SimProvider } from "@/lib/types";
 import { getClinicBySlug } from "@/lib/data/clinics";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { YoucamError } from "@/lib/analysis/youcam";
 
 export const maxDuration = 120;
 
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
   }
 
   const prompt = body.promptOverride?.trim() || SIM_PROMPTS[body.kind].prompt;
-  const failures: Array<{ provider: SimProvider; error: string }> = [];
+  const failures: Array<{ provider: SimProvider; error: string; code?: string }> = [];
 
   // Tester log (scan_runs): provider, timing, mask on/off and errors. Never the images.
   const session = typeof body.session === "string" ? body.session.slice(0, 64) : null;
@@ -105,15 +106,20 @@ export async function POST(req: Request) {
     } catch (e) {
       const error = e instanceof Error ? e.message : "Simulation failed";
       console.warn(`simulate: ${provider} failed: ${error}`);
-      failures.push({ provider, error });
+      failures.push({ provider, error, code: e instanceof YoucamError ? e.code : undefined });
       await logRun({ provider, ok: false, error: error.slice(0, 500), ms: Date.now() - t0 });
     }
   }
   const last = failures[failures.length - 1];
+  // If YouCam turned the photo down (too dark, face too small…), its advice is what helps the
+  // patient, not whatever the last fallback said.
+  const photoAdvice = failures.find((f) => f.code?.startsWith("error_") && f.provider === "youcam");
   // Providers return paragraphs of billing text on a quota miss; the patient gets one plain line
   // and the raw message stays in `detail` for the lab.
   const quota = /quota|rate.?limit|billing|credit|insufficient|resource_exhausted|\b429\b/i.test(last.error);
-  const friendly = quota
+  const friendly = photoAdvice
+    ? photoAdvice.error
+    : quota
     ? "The after-preview isn't available right now: the image model has hit its usage limit. Your scan results are unaffected."
     : last.error.length > 220
       ? `${last.error.slice(0, 200)}…`
