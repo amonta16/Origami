@@ -1,6 +1,6 @@
 # Demo video script: Startup Launch Award (2:00 hard cap, target 1:53)
 
-Planned Sun Nov 15, 2026, ~3:45 AM, from four sources the team supplied. Nothing is cut yet. This is the plan to
+Planned Sun Nov 15, 2026, ~3:45 AM, from four sources the team supplied. Rough cut built ~5:00 AM by `AI HACK/edit/demo2min/build.py` (outside the repo); exports in `demo2min/out/`. This is the plan to
 review first. Music goes in last.
 
 ## Sources
