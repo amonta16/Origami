@@ -48,21 +48,15 @@ export function ScanFlow({
   const [session, setSession] = React.useState<string>("");
   const [runs, setRuns] = React.useState<Record<string, ScanResults>>({});
   const [activeModel, setActiveModel] = React.useState<string>(DEFAULT_MODEL);
-  // A tester's saved pick pins the first analysis to that model; without one, the server's
-  // default runs with its automatic fallback so a patient's scan never fails over quota.
-  const [savedPick, setSavedPick] = React.useState<string | null>(null);
   const [busyModel, setBusyModel] = React.useState<string | null>(null);
   const [modelError, setModelError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    // A patient scan always starts on the server default (YouCam, the paid scanner, with its
+    // fallbacks). An old tester pick saved in this browser used to pin every scan to that model
+    // with no fallback, so a Gemini pick kept failing once its free quota ran out. Clear it.
     try {
-      const saved = localStorage.getItem(MODEL_KEY);
-      if (saved && analysisModel(saved)) {
-        queueMicrotask(() => {
-          setActiveModel(saved);
-          setSavedPick(saved);
-        });
-      }
+      localStorage.removeItem(MODEL_KEY);
     } catch {
       /* private mode */
     }
@@ -81,12 +75,6 @@ export function ScanFlow({
   const rerun = React.useCallback(
     async (modelId: string) => {
       if (!capture) return;
-      try {
-        localStorage.setItem(MODEL_KEY, modelId);
-        setSavedPick(modelId);
-      } catch {
-        /* ignore */
-      }
       if (runs[modelId]) {
         setActiveModel(modelId);
         setResults(runs[modelId]);
@@ -163,7 +151,6 @@ export function ScanFlow({
             height: cap.height,
             firstName: firstName ?? null,
             answers: answers ?? null,
-            model: savedPick ?? undefined,
             session: sess,
             hd: small.hd,
             goals,
@@ -174,7 +161,7 @@ export function ScanFlow({
         setAnalyzeStep(3);
         setResults(json.results);
         // File the run under the model that actually answered (fallback may have changed it).
-        const served = analysisModel(json.results.model)?.id ?? ANALYSIS_MODELS.find((m) => json.results!.model.startsWith(m.id))?.id ?? savedPick ?? DEFAULT_MODEL;
+        const served = analysisModel(json.results.model)?.id ?? ANALYSIS_MODELS.find((m) => json.results!.model.startsWith(m.id))?.id ?? DEFAULT_MODEL;
         setActiveModel(served);
         setRuns({ [served]: json.results });
         setScanId(json.scanId ?? null);
@@ -195,7 +182,7 @@ export function ScanFlow({
         setStep("error");
       }
     },
-    [savedPick, answers, clinic.slug, ev, firstName, goals],
+    [answers, clinic.slug, ev, firstName, goals],
   );
 
   let body: React.ReactNode;

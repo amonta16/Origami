@@ -1,4 +1,5 @@
 import "server-only";
+import sharp from "sharp";
 
 import { CONCERN_BY_ID, severityFromScore } from "@/lib/concerns";
 import { inferTreatmentTags } from "@/lib/treatments/tags";
@@ -274,9 +275,39 @@ export async function youcamAnalyze(args: {
   const hd = Boolean(args.hd);
   try {
     const t0 = Date.now();
-    const fileId = await uploadPhoto(args.photo, ac.signal);
-    const taskId = await startTask(fileId, ac.signal, hd);
-    const data = await pollTask(taskId, ac.signal, budget - (Date.now() - t0));
+    const scan = async (photo: string) => {
+      const fileId = await uploadPhoto(photo, ac.signal);
+      const taskId = await startTask(fileId, ac.signal, hd);
+      return { taskId, data: await pollTask(taskId, ac.signal, budget - (Date.now() - t0)) };
+    };
+    // Selfies lit from above are often "too dark" for YouCam at normal exposure, and with the free
+    // vision fallback out of quota that would end the scan. Failed tasks cost nothing, so retry on a
+    // copy brightened by a plain gain (the only correction that got such a photo past it in testing).
+    // The scores then come from the brighter copy, which can read a little kinder on dark circles.
+    let done: Awaited<ReturnType<typeof scan>>;
+    try {
+      done = await scan(args.photo);
+    } catch (e) {
+      if (!(e instanceof YoucamError && e.code === "error_lighting_dark")) throw e;
+      let last: unknown = e;
+      let got: Awaited<ReturnType<typeof scan>> | null = null;
+      for (const gain of [1.35, 1.6, 1.9]) {
+        try {
+          console.info(`youcam scan: "too dark", retrying at gain ${gain}`);
+          const { bytes } = splitDataUrl(args.photo);
+          const lit = await sharp(bytes).removeAlpha().linear(gain, 0).jpeg({ quality: 94 }).toBuffer();
+          got = await scan(`data:image/jpeg;base64,${lit.toString("base64")}`);
+          break;
+        } catch (e2) {
+          last = e2;
+          if (!(e2 instanceof YoucamError && e2.code === "error_lighting_dark")) break;
+        }
+      }
+      if (!got) throw last;
+      done = got;
+    }
+
+    const { data, taskId } = done;
 
     // A flat list; HD features can repeat per region. Take the whole-face reading for each marker.
     type Item = { type: string; region?: string; ui_score?: number; raw_score?: number; score?: number; mask_urls?: string[] | Record<string, string> | string };
