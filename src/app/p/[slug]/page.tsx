@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { Bonuses } from "@/components/funnel/bonuses";
 import { FlockBackground } from "@/components/marketing/flock";
 import { ClinicTheme } from "@/components/clinic-theme";
-import { BookCallButton, FixItButton, LookAroundButton, PhoneFrame } from "@/components/funnel/preview-client";
+import { BookCallButton, FixItButton, LookAroundButton, OpenAppButton, PhoneFrame } from "@/components/funnel/preview-client";
 import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
 import { isOwner } from "@/lib/owner/session";
 
@@ -68,7 +68,12 @@ async function Preview({ params }: { params: PageProps<"/p/[slug]">["params"] })
             <span className="h-[18px]" />
           )}
           <PhoneFrame src={`/s/${clinic.slug}`} title={`${clinic.name} app preview`} />
-          <p className="text-[12px] text-ink-muted">Tap around. It&rsquo;s the real app.</p>
+          <p className="text-[12px] text-ink-muted">
+            Tap around. It&rsquo;s the real app.{" "}
+            <a href={`/s/${clinic.slug}`} target="_blank" rel="noopener" className="font-medium text-ink underline underline-offset-2">
+              Open it full screen
+            </a>
+          </p>
         </div>
 
         {/* pitch */}
@@ -78,9 +83,10 @@ async function Preview({ params }: { params: PageProps<"/p/[slug]">["params"] })
             <br />
             this is <span className="chrome-text">your app.</span>
           </h1>
-          <div className="mt-6 grid grid-cols-2 gap-2.5 sm:flex">
+          <div className="mt-6 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap">
             <BookCallButton slug={clinic.slug} spaName={shortName} />
             <LookAroundButton />
+            <OpenAppButton href={`/s/${clinic.slug}`} className="col-span-2" />
           </div>
           <p className="mt-5 text-[15px] leading-relaxed text-ink-muted">
             Built from {clinic.website ? new URL(clinic.website).hostname.replace(/^www\./, "") : "your website"} in seconds: your name, your colors{treatments.length ? `, and ${treatments.length} treatments from your menu` : ""}. It works on any phone, no download.

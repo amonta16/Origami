@@ -25,7 +25,8 @@ export function PhoneFrame({ src, title }: { src: string; title: string }) {
               <svg viewBox="0 0 26 12" className="h-2.5 w-6"><rect x=".5" y=".5" width="22" height="11" rx="3" fill="none" stroke="currentColor" /><rect x="2" y="2" width="18" height="8" rx="1.5" fill="currentColor" /><path d="M24 4v4" stroke="currentColor" strokeWidth="1.5" /></svg>
             </span>
           </div>
-          <iframe key={key} src={src} title={title} className="absolute inset-x-0 bottom-0 top-10 h-[calc(100%-2.5rem)] w-full border-0" />
+          {/* allow="camera": browsers block the camera inside an iframe unless the parent grants it */}
+          <iframe key={key} src={src} title={title} allow="camera" className="absolute inset-x-0 bottom-0 top-10 h-[calc(100%-2.5rem)] w-full border-0" />
           <span className="pointer-events-none absolute bottom-1.5 left-1/2 z-10 h-1 w-28 -translate-x-1/2 rounded-full bg-ink/80" aria-hidden="true" />
         </div>
       </div>
@@ -52,6 +53,29 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
     >
       <span aria-live="polite">{done ? "Copied" : label}</span>
     </button>
+  );
+}
+
+/**
+ * Opens the spa's real patient app in its own tab, full screen. On a phone this is the way to run
+ * the scan with the real camera instead of squinting at the mockup; the mockup stays for desktop.
+ */
+export function OpenAppButton({ href, className }: { href: string; className?: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      className={`flex h-[52px] items-center justify-center gap-2 rounded-[14px] border border-ink bg-ink px-5 text-white hover:bg-ink/85 ${className ?? ""}`}
+    >
+      <span className="flex flex-col items-center">
+        <span className="text-[14px] font-medium leading-tight">Open the full app</span>
+        <span className="text-[11px] leading-tight text-white/70">full screen, try the scan</span>
+      </span>
+      <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" fill="none" aria-hidden="true">
+        <path d="M6 3h7v7M13 3L4 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </a>
   );
 }
 
