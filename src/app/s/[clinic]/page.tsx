@@ -259,6 +259,21 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
         )}
       </section>
 
+      {/* demo only: the sample clinic links to its own front desk so visitors can see both sides */}
+      {clinic.is_sample && (
+        <section className="px-4 pt-9">
+          <div className="flex items-center gap-3.5 rounded-[16px] bg-[#111318] px-4 py-4 text-white">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold">See the clinic&rsquo;s side</span>
+              <span className="block text-[13px] leading-snug text-white/70">Check-ins, orders, who&rsquo;s due and the App Builder for this sample spa.</span>
+            </span>
+            <a href={`/desk/${clinic.slug}`} target="_top" className="shrink-0 rounded-[10px] bg-white px-3.5 py-2 text-[14px] font-medium text-[#111318]">
+              Front desk
+            </a>
+          </div>
+        </section>
+      )}
+
       <p className="px-6 pt-8 text-center text-[11px] leading-relaxed text-[#9a9ca3]">
         {clinic.is_sample && <>Sample clinic for demos. Prices are typical, not a real offer. </>}
         {anyStock(treatments, photos.heroIsStock) && <>Some photos are stock images, not taken at {clinic.name}. </>}

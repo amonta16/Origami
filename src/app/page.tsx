@@ -20,9 +20,16 @@ export default function Home() {
             <img src="/brand/atlas-engine-bird.png" alt="" width={32} height={32} className="size-8" />
             <span className="font-brand-serif text-[25px] leading-none">Origami</span>
           </Link>
-          <Link href="/s/sample" className="rounded-[10px] bg-ink px-4 py-2.5 text-[14px] font-medium text-white hover:bg-ink-soft">
-            See a sample app
-          </Link>
+          <nav className="flex items-center gap-2">
+            <Link href="/desk/sample" className="rounded-[10px] border border-line-strong bg-surface/80 px-3.5 py-2.5 text-[14px] font-medium backdrop-blur-sm hover:border-ink">
+              <span className="sm:hidden">Front desk</span>
+              <span className="hidden sm:inline">See the front desk</span>
+            </Link>
+            <Link href="/s/sample" className="rounded-[10px] bg-ink px-3.5 py-2.5 text-[14px] font-medium text-white hover:bg-ink-soft">
+              <span className="sm:hidden">Sample app</span>
+              <span className="hidden sm:inline">See a sample app</span>
+            </Link>
+          </nav>
         </header>
 
         <section className="relative mx-auto flex w-full max-w-4xl flex-col items-center px-5 pb-20 pt-12 text-center sm:px-8 sm:pt-20">
