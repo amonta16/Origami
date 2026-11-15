@@ -2,6 +2,7 @@ import "server-only";
 
 import { CONCERN_BY_ID, severityFromScore } from "@/lib/concerns";
 import { inferTreatmentTags } from "@/lib/treatments/tags";
+import { MARKER_LABEL, WEAK_BELOW } from "@/lib/scan/scoring";
 import type { ConcernResult, Recommendation, Treatment, ZoneId } from "@/lib/types";
 
 /**
@@ -26,19 +27,19 @@ export function youcamConfigured() {
  * YouCam SD feature -> our concern vocabulary, with the sentence shown for a clear / mild / clear-to-see
  * reading. Features we have no concern for (oiliness, eyelids, skin type) are not requested.
  */
-const FEATURES: Array<{ action: string; concern: string; zone: ZoneId; say: [clear: string, mild: string, strong: string] }> = [
-  { action: "wrinkle", concern: "fine_lines", zone: "full_face", say: ["Hardly any lines show.", "A few fine lines are starting to show.", "Fine lines are easy to see across the face."] },
-  { action: "firmness", concern: "sagging", zone: "jawline", say: ["Skin looks firm along the jaw and cheeks.", "Skin is a touch less firm along the jaw.", "Skin looks noticeably less firm along the jaw and cheeks."] },
-  { action: "acne", concern: "acne", zone: "full_face", say: ["No active breakouts.", "A few small blemishes.", "Several active breakouts are visible."] },
-  { action: "moisture", concern: "hydration", zone: "full_face", say: ["Skin looks well hydrated.", "Skin reads a little dry.", "Skin reads dehydrated, with a tight, crinkled look."] },
-  { action: "eye_bag", concern: "under_eye_puffiness", zone: "under_eye_left", say: ["Little puffiness under the eyes.", "Slight puffiness under the eyes.", "Puffiness is clear under the eyes."] },
-  { action: "dark_circle_v2", concern: "dark_circles", zone: "under_eye_left", say: ["The under-eyes look bright.", "Some shadow under the eyes.", "Dark circles are clear under the eyes."] },
-  { action: "tear_trough", concern: "under_eye_hollows", zone: "under_eye_left", say: ["Tear troughs look full.", "Slight hollowing in the tear trough.", "Hollowing in the tear trough is easy to see."] },
-  { action: "age_spot", concern: "pigmentation", zone: "full_face", say: ["Few spots or patches.", "Some sun spots and small pigment patches.", "Sun spots and pigment patches stand out."] },
-  { action: "radiance", concern: "dullness", zone: "full_face", say: ["Skin looks radiant.", "Skin could glow a little more.", "Skin looks dull rather than glowing."] },
-  { action: "redness", concern: "redness", zone: "cheek_left", say: ["Little redness.", "Some redness on the cheeks or nose.", "Redness is clear on the cheeks or nose."] },
-  { action: "pore", concern: "pores", zone: "nose", say: ["Pores look refined.", "Pores are a little visible around the nose.", "Enlarged pores are easy to see around the nose and cheeks."] },
-  { action: "texture", concern: "texture", zone: "full_face", say: ["Texture looks smooth.", "Texture is slightly uneven.", "Surface texture reads rough and uneven."] },
+const FEATURES: Array<{ action: string; hd: string; concern: string; zone: ZoneId; say: [clear: string, mild: string, strong: string] }> = [
+  { action: "wrinkle", hd: "hd_wrinkle", concern: "fine_lines", zone: "full_face", say: ["Hardly any lines show.", "A few fine lines are starting to show.", "Fine lines are easy to see across the face."] },
+  { action: "firmness", hd: "hd_firmness", concern: "sagging", zone: "jawline", say: ["Skin looks firm along the jaw and cheeks.", "Skin is a touch less firm along the jaw.", "Skin looks noticeably less firm along the jaw and cheeks."] },
+  { action: "acne", hd: "hd_acne", concern: "acne", zone: "full_face", say: ["No active breakouts.", "A few small blemishes.", "Several active breakouts are visible."] },
+  { action: "moisture", hd: "hd_moisture", concern: "hydration", zone: "full_face", say: ["Skin looks well hydrated.", "Skin reads a little dry.", "Skin reads dehydrated, with a tight, crinkled look."] },
+  { action: "eye_bag", hd: "hd_eye_bag", concern: "under_eye_puffiness", zone: "under_eye_left", say: ["Little puffiness under the eyes.", "Slight puffiness under the eyes.", "Puffiness is clear under the eyes."] },
+  { action: "dark_circle_v2", hd: "hd_dark_circle", concern: "dark_circles", zone: "under_eye_left", say: ["The under-eyes look bright.", "Some shadow under the eyes.", "Dark circles are clear under the eyes."] },
+  { action: "tear_trough", hd: "hd_tear_trough", concern: "under_eye_hollows", zone: "under_eye_left", say: ["Tear troughs look full.", "Slight hollowing in the tear trough.", "Hollowing in the tear trough is easy to see."] },
+  { action: "age_spot", hd: "hd_age_spot", concern: "pigmentation", zone: "full_face", say: ["Few spots or patches.", "Some sun spots and small pigment patches.", "Sun spots and pigment patches stand out."] },
+  { action: "radiance", hd: "hd_radiance", concern: "dullness", zone: "full_face", say: ["Skin looks radiant.", "Skin could glow a little more.", "Skin looks dull rather than glowing."] },
+  { action: "redness", hd: "hd_redness", concern: "redness", zone: "cheek_left", say: ["Little redness.", "Some redness on the cheeks or nose.", "Redness is clear on the cheeks or nose."] },
+  { action: "pore", hd: "hd_pore", concern: "pores", zone: "nose", say: ["Pores look refined.", "Pores are a little visible around the nose.", "Enlarged pores are easy to see around the nose and cheeks."] },
+  { action: "texture", hd: "hd_texture", concern: "texture", zone: "full_face", say: ["Texture looks smooth.", "Texture is slightly uneven.", "Surface texture reads rough and uneven."] },
 ];
 
 /** Plain-language versions of YouCam's photo errors, shown on the retry screen. */
@@ -62,6 +63,11 @@ export type YoucamAnalysis = {
   medical_flag: null;
   /** YouCam's per-concern mask images, aligned to the photo that was sent. Signed URLs, short-lived. */
   overlays: YoucamOverlay[];
+  /** the resized photo the overlays line up with (signed, ~2 h) */
+  photo_url?: string;
+  /** HD-only wrinkle readings per face region, higher = smoother */
+  zones: Array<{ id: string; label: string; score: number }>;
+  hd: boolean;
   /** raw feature scores for the tester log */
   raw: Array<{ type: string; ui_score: number; raw_score: number }>;
   task_id: string;
@@ -150,13 +156,14 @@ async function uploadPhoto(photo: string, signal: AbortSignal) {
   return file.file_id;
 }
 
-async function startTask(fileId: string, signal: AbortSignal) {
+async function startTask(fileId: string, signal: AbortSignal, hd: boolean) {
   const res = await fetch(`${BASE}/s2s/v2.1/task/skin-analysis`, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify({
       src_file_id: fileId,
-      dst_actions: FEATURES.map((f) => f.action),
+      // all HD or all SD: YouCam rejects a mix
+      dst_actions: FEATURES.map((f) => (hd ? f.hd : f.action)),
       miniserver_args: { enable_mask_overlay: true },
       format: "json",
     }),
@@ -213,55 +220,77 @@ function firstUrl(m: string[] | Record<string, string> | string | undefined) {
 }
 
 /**
- * Pick 1–3 menu items whose concerns overlap her worst findings, worst first. Menus built from a
- * clinic's website carry no hand-tagged concerns, so those are inferred from the treatment's name
- * and description. If nothing overlaps, offer the clinic's most popular item as a starting point,
- * labeled as such.
+ * Rank the clinic's own menu against this scan. The focus is her five weakest markers under
+ * WEAK_BELOW plus whatever she said she wants to improve; each treatment scores the sum of how far
+ * below 100 its matched markers are, with a bump for a stated goal. Top three win. Concern tags come
+ * from the menu row or are inferred from its wording; anything named "consult" is skipped.
  */
-function recommend(concerns: ConcernResult[], treatments: Treatment[]): Recommendation[] {
-  const tagged = treatments.map((t) => ({ t, concerns: t.concerns?.length ? t.concerns : inferTreatmentTags(t.name, t.description, t.category).concerns }));
-  const out: Recommendation[] = [];
-  const used = new Set<string>();
-  for (const c of concerns) {
-    if (c.score < 25 || out.length >= 3) break;
-    const hit = tagged.find((x) => !used.has(x.t.id) && x.concerns.includes(c.id));
-    if (!hit) continue;
-    used.add(hit.t.id);
-    const label = CONCERN_BY_ID[c.id]?.label.toLowerCase() ?? c.id;
-    out.push({ treatment_id: hit.t.id, why: `Matched to your ${label}, which the scanner rated ${100 - c.score} out of 100 on your photo.` });
-  }
-  if (!out.length && treatments.length) {
-    const t = treatments.find((t) => t.popular) ?? treatments[0];
-    out.push({ treatment_id: t.id, why: `Nothing on this menu is tagged for your top findings yet. ${t.name} is a popular starting point here; a consultation can map it to your scan.` });
-  }
-  return out;
+function recommend(concerns: ConcernResult[], treatments: Treatment[], goals: string[]): Recommendation[] {
+  const ui = (c: ConcernResult) => 100 - c.score;
+  const weakest = [...concerns].filter((c) => ui(c) < WEAK_BELOW).sort((a, b) => ui(a) - ui(b)).slice(0, 5);
+  const focus = [...new Set([...weakest.map((c) => c.id), ...goals])];
+  const byId = new Map(concerns.map((c) => [c.id, c]));
+  const ranked = treatments
+    .filter((t) => !/consult/i.test(t.name))
+    .map((t) => {
+      const tags = t.concerns?.length ? t.concerns : inferTreatmentTags(t.name, t.description, t.category).concerns;
+      const matched = focus.filter((id) => tags.includes(id) && byId.has(id));
+      const rank = matched.reduce((s, id) => s + (100 - ui(byId.get(id)!)) + (goals.includes(id) ? 10 : 0), 0);
+      return { t, matched: matched.sort((a, b) => ui(byId.get(a)!) - ui(byId.get(b)!)), rank };
+    })
+    .filter((x) => x.matched.length)
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, 3);
+  return ranked.map(({ t, matched }) => {
+    const labels = matched.slice(0, 3).map((id) => (MARKER_LABEL[id] ?? CONCERN_BY_ID[id]?.label ?? id).toLowerCase());
+    const list = labels.length > 1 ? `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}` : labels[0];
+    return { treatment_id: t.id, why: `Targets your ${list}, the areas where your scan scored lowest.`, targets: labels };
+  });
 }
+
+const ZONE_NAMES: Record<string, string> = {
+  forehead: "Forehead",
+  glabellar: "Between the brows",
+  crowfeet: "Crow's feet",
+  periocular: "Around the eyes",
+  nasolabial: "Smile lines",
+  marionette: "Mouth corners",
+};
 
 export async function youcamAnalyze(args: {
   photo: string;
   firstName: string | null;
   treatments: Treatment[];
+  /** HD analysis: only when the photo's short side is at least 1080 px */
+  hd?: boolean;
+  /** concern ids the patient said she wants to improve */
+  goals?: string[];
   /** whole-call budget; the route has 120 s */
   budgetMs?: number;
 }): Promise<YoucamAnalysis> {
   const budget = args.budgetMs ?? 75_000;
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), budget + 5_000);
+  const hd = Boolean(args.hd);
   try {
     const t0 = Date.now();
     const fileId = await uploadPhoto(args.photo, ac.signal);
-    const taskId = await startTask(fileId, ac.signal);
+    const taskId = await startTask(fileId, ac.signal, hd);
     const data = await pollTask(taskId, ac.signal, budget - (Date.now() - t0));
 
-    const output = data.results?.output ?? [];
-    const byType = new Map(output.map((o) => [o.type, o]));
+    // A flat list; HD features can repeat per region. Take the whole-face reading for each marker.
+    type Item = { type: string; region?: string; ui_score?: number; raw_score?: number; score?: number; mask_urls?: string[] | Record<string, string> | string };
+    const output = (data.results?.output ?? []) as Item[];
+    const pick = (type: string) => output.find((o) => o.type === type && (!o.region || o.region === "whole")) ?? output.find((o) => o.type === type);
+    const num = (o: Item | undefined) => (o ? (typeof o.ui_score === "number" ? o.ui_score : typeof o.score === "number" ? o.score : typeof o.raw_score === "number" ? o.raw_score : null) : null);
     const concerns: ConcernResult[] = [];
     const overlays: YoucamOverlay[] = [];
     const raw: YoucamAnalysis["raw"] = [];
     for (const f of FEATURES) {
-      const o = byType.get(f.action);
-      if (!o || typeof o.ui_score !== "number") continue;
-      const ui = Math.max(1, Math.min(100, Math.round(o.ui_score)));
+      const o = pick(hd ? f.hd : f.action);
+      const v = num(o);
+      if (!o || v == null) continue;
+      const ui = Math.max(1, Math.min(100, Math.round(v)));
       const score = 100 - ui;
       raw.push({ type: f.action, ui_score: ui, raw_score: typeof o.raw_score === "number" ? o.raw_score : ui });
       const sev = severityFromScore(score);
@@ -273,27 +302,42 @@ export async function youcamAnalyze(args: {
     if (!concerns.length) throw new YoucamError("YouCam returned no scores for this photo.");
     concerns.sort((a, b) => b.score - a.score);
 
-    const all = data.results?.all;
-    const allScore = typeof all === "number" ? all : all && typeof all.score === "number" ? all.score : null;
+    // Overall and skin age arrive as items in the same list (older responses put them on results).
+    const allItem = pick("all");
+    const legacyAll = data.results?.all;
+    const allScore = num(allItem) ?? (typeof legacyAll === "number" ? legacyAll : legacyAll && typeof legacyAll.score === "number" ? legacyAll.score : null);
     const mean = raw.reduce((s, r) => s + r.ui_score, 0) / raw.length;
     const overall = Math.round(Math.min(100, Math.max(0, allScore ?? mean)));
-    const worst = concerns.slice(0, 2).map((c) => CONCERN_BY_ID[c.id]?.label.toLowerCase() ?? c.id);
-    const best = [...concerns].reverse().find((c) => c.severity === "none" || c.severity === "mild");
+    const ageV = num(pick("skin_age")) ?? (typeof data.results?.skin_age === "number" ? data.results.skin_age : null);
+    const skinAge = ageV != null && ageV >= 10 && ageV <= 99 ? Math.round(ageV) : null;
+    // The resized photo every mask lines up with: the skin map's background.
+    const photoUrl = firstUrl(pick("resize_image")?.mask_urls) ?? undefined;
+    // Wrinkle zones (HD only): one reading per face region.
+    const zones = hd
+      ? output
+          .filter((o) => o.type === "hd_wrinkle" && o.region && ZONE_NAMES[o.region])
+          .map((o) => ({ id: o.region!, label: ZONE_NAMES[o.region!], score: Math.round(num(o) ?? 0) }))
+          .filter((z) => z.score > 0)
+      : [];
+
+    const top =concerns.filter((c) => 100 - c.score < WEAK_BELOW).slice(0, 3).map((c) => (MARKER_LABEL[c.id] ?? c.id).toLowerCase());
     const name = args.firstName ? `${args.firstName}, your` : "Your";
-    const insight =
-      `${name} skin scored ${overall} out of 100 on YouCam's skin analysis, measured across ${raw.length} signals. ` +
-      (worst.length ? `The biggest opportunities are ${worst.join(" and ")}` : "Nothing stands out strongly") +
-      (best ? `, while ${CONCERN_BY_ID[best.id]?.label.toLowerCase() ?? best.id} already looks good.` : ".");
+    const insight = top.length
+      ? `${name} skin scored ${overall} out of 100. Your biggest opportunities: ${top.join(", ")}.`
+      : `${name} skin scored ${overall} out of 100. Every marker is in a healthy range.`;
 
     return {
       overall_score: overall,
       potential_score: Math.min(100, overall + 10),
-      skin_age: typeof data.results?.skin_age === "number" && data.results.skin_age >= 16 ? Math.round(data.results.skin_age) : null,
+      skin_age: skinAge,
       insight,
       concerns,
-      recommendations: recommend(concerns, args.treatments),
+      recommendations: recommend(concerns, args.treatments, args.goals ?? []),
       medical_flag: null,
       overlays,
+      photo_url: photoUrl,
+      zones,
+      hd,
       raw,
       task_id: taskId,
     };

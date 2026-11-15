@@ -85,13 +85,15 @@ export function runSimulation(args: {
   provider?: SimProvider;
   useMask?: boolean;
   promptOverride?: string;
+  /** kind "scan": Skin Simulation strengths */
+  sim?: Record<string, number>;
   force?: boolean;
   /** tester session + clinic for the scan_runs log */
   session?: string;
   clinicSlug?: string;
 }): Promise<SimResult> {
   const useMask = args.useMask ?? false;
-  const key = simKey(args.photoId, args.kind, args.provider ?? "auto", useMask) + (args.promptOverride ? ":custom" : "");
+  const key = simKey(args.photoId, args.kind, args.provider ?? "auto", useMask) + (args.promptOverride ? ":custom" : "") + (args.sim ? `:${JSON.stringify(args.sim)}` : "");
   if (!args.force && cache.has(key)) return cache.get(key)!;
   const p = (async () => {
     const inputs = await prepareInputs(args.photo, args.landmarks, args.kind);
@@ -110,6 +112,7 @@ export function runSimulation(args: {
         maskBW: sendMaskBW,
         useMask,
         kind: args.kind,
+        sim: args.sim,
         provider: args.provider,
         promptOverride: args.promptOverride,
         session: args.session,

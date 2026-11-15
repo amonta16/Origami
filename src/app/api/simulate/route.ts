@@ -13,6 +13,8 @@ type Body = {
   maskBW?: string | null; // PNG data URL white-on-black (white = editable) — FLUX fill
   useMask?: boolean; // ask the provider to honor the mask (fal switches to the fill model)
   kind: SimKind;
+  /** kind "scan": Skin Simulation strengths, 0..1 per key */
+  sim?: Record<string, number>;
   provider?: SimProvider;
   promptOverride?: string;
   /** groups runs in scan_runs for the tester comparison page */
@@ -90,6 +92,7 @@ export async function POST(req: Request) {
         useMask: Boolean(body.useMask),
         prompt,
         kind: body.kind,
+        sim: body.sim && typeof body.sim === "object" ? body.sim : undefined,
       });
       await logRun({ provider, model_served: out.model, ok: true, ms: out.ms });
       return NextResponse.json({

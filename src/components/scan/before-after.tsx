@@ -18,6 +18,7 @@ export function BeforeAfter({
   onDoseChange,
   className,
   inline = false,
+  hideDose = false,
 }: {
   original: string;
   composite: string;
@@ -28,6 +29,8 @@ export function BeforeAfter({
   className?: string;
   /** on a scrolling page: vertical swipes scroll the page, horizontal swipes move the split */
   inline?: boolean;
+  /** a fixed example: no dose control, the after shown as given */
+  hideDose?: boolean;
 }) {
   const afterRef = React.useRef<HTMLCanvasElement>(null);
   const imgs = React.useRef<{ o: HTMLImageElement; c: HTMLImageElement } | null>(null);
@@ -96,11 +99,11 @@ export function BeforeAfter({
           </div>
         </div>
         <span className="absolute top-3 left-3 rounded-chip bg-black/45 px-2.5 py-1 text-[11px] font-medium text-ivory backdrop-blur">Before</span>
-        <span className="absolute top-3 right-3 rounded-chip bg-black/45 px-2.5 py-1 text-[11px] font-medium text-ivory backdrop-blur">After · {doseLabel}</span>
+        <span className="absolute top-3 right-3 rounded-chip bg-black/45 px-2.5 py-1 text-[11px] font-medium text-ivory backdrop-blur">{hideDose ? "AI preview" : `After · ${doseLabel}`}</span>
         <span className="absolute right-3 bottom-3 rounded-sm bg-black/40 px-2 py-1 text-[10px] text-ivory/90">AI simulation — results vary</span>
       </div>
 
-      <div className="mt-4">
+      <div className={cn("mt-4", hideDose && "hidden")}>
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium">Dose</span>
           <span className="text-ink-muted">{doseLabel}</span>

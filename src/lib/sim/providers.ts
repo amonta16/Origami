@@ -32,6 +32,8 @@ export type EditInput = {
   useMask?: boolean;
   /** YouCam picks its API and sliders from the treatment kind, not a prompt. */
   kind?: SimKind;
+  /** kind "scan": Skin Simulation strengths per key, 0..1 (from the scan's weakest scores) */
+  sim?: Record<string, number>;
 };
 export type EditOutput = { image: string; model: string; ms: number; raw?: unknown };
 
@@ -58,6 +60,7 @@ export async function runEdit(p: SimProvider, input: EditInput): Promise<EditOut
  * Units per call (docs, Nov 15 2026): Skin Simulation 4 (1–4 concerns), Face Lift 1, Face Reshape 1.
  */
 const YOUCAM_SIM: Record<SimKind, { path: string; body: Record<string, unknown> }> = {
+  scan: { path: "/s2s/v2.0/task/skin-simulation", body: { radiance: 0.5 } }, // replaced by the scan's own strengths
   neurotoxin: { path: "/s2s/v2.0/task/skin-simulation", body: { wrinkle: 1 } },
   under_eye_filler: { path: "/s2s/v2.0/task/skin-simulation", body: { eye_bags: 1, dark_circle: 0.8 } },
   resurfacing: { path: "/s2s/v2.0/task/skin-simulation", body: { texture: 1, pores: 1, wrinkle: 0.5, acne: 0.7 } },
@@ -73,9 +76,20 @@ const YOUCAM_SIM: Record<SimKind, { path: string; body: Record<string, unknown> 
   },
 };
 
+/** Skin Simulation keys we let a client set (oiliness left out on purpose: at full strength it adds shine). */
+const SIM_KEYS = ["wrinkle", "radiance", "acne", "eye_bags", "dark_circle", "spots", "pores", "texture", "redness"];
+function simBody(sim: Record<string, number> | undefined) {
+  const body: Record<string, number> = {};
+  for (const k of SIM_KEYS) {
+    const v = Number(sim?.[k]);
+    if (Number.isFinite(v) && v > 0) body[k] = Math.round(Math.min(1, v) * 100) / 100;
+  }
+  return Object.keys(body).length ? body : { radiance: 0.5 };
+}
+
 async function youcam(input: EditInput): Promise<Omit<EditOutput, "ms">> {
   if (!input.kind) throw new Error("YouCam preview needs the treatment kind");
-  const spec = YOUCAM_SIM[input.kind];
+  const spec = input.kind === "scan" ? { path: YOUCAM_SIM.scan.path, body: simBody(input.sim) } : YOUCAM_SIM[input.kind];
   const model = `${MODELS.youcam}:${spec.path.split("/").pop()}`;
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), 100_000);

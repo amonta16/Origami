@@ -149,6 +149,8 @@ export type ConcernResult = {
 export type Recommendation = {
   treatment_id: string;
   why: string;
+  /** lower-case marker names this treatment was matched on (scanner results) */
+  targets?: string[];
 };
 
 export type ScanResults = {
@@ -164,6 +166,12 @@ export type ScanResults = {
   disclaimer: string;
   /** Per-concern overlay images from the scanner (YouCam masks), aligned to the analyzed photo. Short-lived URLs. */
   overlays?: Array<{ id: string; url: string }>;
+  /** Scanner's resized copy of the analyzed photo; the overlays line up with it. Short-lived URL. */
+  photo_url?: string;
+  /** Scanner wrinkle readings per face region (HD scans only), higher = smoother. */
+  zones?: Array<{ id: string; label: string; score: number }>;
+  /** what she said she wants to improve (concern ids) */
+  goals?: string[];
 };
 
 export type Landmark = { x: number; y: number; z: number };
@@ -203,4 +211,6 @@ export type SimKind =
   | "cheek_filler"
   | "resurfacing"
   | "tone"
-  | "glow";
+  | "glow"
+  /** "Your AI preview": the scan's weakest areas at once, strengths set from the scores */
+  | "scan";

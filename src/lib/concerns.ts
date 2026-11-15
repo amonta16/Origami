@@ -87,6 +87,7 @@ export function simKindFor(t: Pick<Treatment, "zones" | "concerns">): SimKind {
 
 /** Zones the simulation is allowed to change, per kind. */
 export const SIM_ZONES: Record<SimKind, ZoneId[]> = {
+  scan: ["full_face"],
   neurotoxin: ["forehead", "glabella", "crows_feet_left", "crows_feet_right"],
   lip_filler: ["lips"],
   under_eye_filler: ["under_eye_left", "under_eye_right"],

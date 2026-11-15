@@ -23,7 +23,7 @@ export function ConsentScreen({ clinic, onAgree }: { clinic: Clinic; onAgree: ()
         <MeshPhoto className="mb-5 rounded-[18px]">
           <span className="absolute left-3 top-3 rounded-[8px] bg-black/55 px-2.5 py-1 text-[12px] font-bold tracking-[0.04em] text-white">WHAT THE SCAN SEES</span>
         </MeshPhoto>
-        <p className="text-[11px] font-medium tracking-[0.12em] text-brand-ink">BEFORE THE CAMERA OPENS</p>
+        <p className="text-[11px] font-medium tracking-[0.12em] text-brand-ink">STEP 2 OF 2 · BEFORE THE CAMERA OPENS</p>
         <h1 className="font-display mt-1 text-[24px]">Here is exactly what happens with your photo.</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
           Origami maps your face with a live 3D mesh, scores a few cosmetic concerns and shows what a treatment could look like on you.
@@ -31,7 +31,7 @@ export function ConsentScreen({ clinic, onAgree }: { clinic: Clinic; onAgree: ()
 
         <ul className="mt-4 divide-y divide-line rounded-card border border-line bg-surface">
           {[
-            ["Your face is biometric data", "The scan runs on your phone. One photo goes to our servers and an AI image service to score it and render the preview."],
+            ["Your face is biometric data", "Face tracking runs on your phone. One photo goes to our server and to Perfect Corp's YouCam AI, which scores it and renders the preview."],
             ["Kept 72 hours, then deleted", "Unless you choose to keep your results. Never sold, never used to train anything, never used for anything but your scan."],
             ["Cosmetic estimates, not a diagnosis", "A clinician confirms everything in person. If something looks medical, we say so and suggest a doctor."],
             ["Student project", "Origami is being built at the Cal Poly AI Hackathon, Nov 13–15, 2026."],

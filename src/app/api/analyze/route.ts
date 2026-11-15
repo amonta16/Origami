@@ -5,7 +5,7 @@ import { openaiStructured, OPENAI_VISION_MODEL } from "@/lib/analysis/openai";
 import { analysisModel, type AnalysisProvider } from "@/lib/analysis/models";
 import { geminiStructured, GEMINI_VISION_MODEL } from "@/lib/analysis/gemini";
 import { youcamAnalyze, youcamConfigured, YOUCAM_MODEL_ID } from "@/lib/analysis/youcam";
-import { severityFromScore } from "@/lib/concerns";
+import { CONCERN_IDS, severityFromScore } from "@/lib/concerns";
 import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
 import { isSupabaseConfigured, supabaseAdmin, supabaseEnv } from "@/lib/supabase/server";
 import type { ScanResults } from "@/lib/types";
@@ -35,6 +35,10 @@ type Body = {
   session?: string;
   /** true when re-running the same photo with another model */
   rerun?: boolean;
+  /** the photo is a face crop with a short side of at least 1080 px: run the scanner in HD */
+  hd?: boolean;
+  /** concern ids from the goals step */
+  goals?: string[];
 };
 
 /** Keys present on the server, per provider. Never the values. */
@@ -246,6 +250,7 @@ export async function POST(req: Request) {
   }
 
   const crops = (body.crops ?? []).slice(0, 8).filter((c) => c.dataUrl?.startsWith("data:image/"));
+  const goals = Array.isArray(body.goals) ? [...new Set(body.goals.filter((g): g is string => typeof g === "string" && CONCERN_IDS.includes(g)))].slice(0, 12) : [];
   const t0 = Date.now();
   type Raw = Omit<ScanResults, "provider" | "model" | "disclaimer">;
   let raw: Raw | null = null;
@@ -272,8 +277,9 @@ export async function POST(req: Request) {
 
   const runWith = async (p: AnalysisProvider): Promise<{ raw: Raw; model: string }> => {
     if (p === "youcam") {
-      const out = await youcamAnalyze({ photo: body.photo, firstName: body.firstName ?? null, treatments });
-      const { raw: _features, task_id: _task, ...rest } = out;
+      const out = await youcamAnalyze({ photo: body.photo, firstName: body.firstName ?? null, treatments, hd: Boolean(body.hd), goals });
+      const { raw: _features, task_id: _task, hd: _hd, ...rest } = out;
+      void _hd;
       void _features;
       void _task;
       return { raw: rest, model: YOUCAM_MODEL_ID };
@@ -358,10 +364,14 @@ export async function POST(req: Request) {
     model,
     disclaimer: DISCLAIMER,
     ...(raw.overlays?.length ? { overlays: raw.overlays } : {}),
+    ...(raw.photo_url ? { photo_url: raw.photo_url } : {}),
+    ...(raw.zones?.length ? { zones: raw.zones } : {}),
+    ...(goals.length ? { goals } : {}),
   };
 
   // Tester log: structured results only, never the photo (overlay URLs are signed and expire, so they stay out too).
-  const { overlays: _ov, ...loggable } = results;
+  const { overlays: _ov, photo_url: _pu, ...loggable } = results;
+  void _pu;
   void _ov;
   await logRun({ provider: used, model_served: model, ok: true, results: loggable });
 

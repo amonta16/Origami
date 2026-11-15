@@ -11,6 +11,10 @@ const KEEP =
   "This must remain the exact same person: identical face shape, eyes, nose, mouth, bone structure, skin tone, freckles, moles, pores, hair, expression, head angle, lighting, white balance, clothing and background. No beauty filter, no airbrushing, no smoothing outside the treated area, no reshaping of anything not named. Output a photorealistic, unretouched phone photo at the same framing and resolution.";
 
 export const SIM_PROMPTS: Record<SimKind, { label: string; prompt: string }> = {
+  scan: {
+    label: "Your AI preview (weakest areas from the scan)",
+    prompt: `Edit this photo to show the skin after a well-planned course of med spa treatments: fine lines softer, texture smoother, pores finer, sun spots and redness faded, under-eyes brighter and less puffy, and a healthy natural glow, with real pores and texture still visible and no filter look. ${KEEP}`,
+  },
   neurotoxin: {
     label: "Neurotoxin (forehead, frown lines, crow's feet)",
     prompt: `Edit this photo to show the full result two weeks after a well-done neurotoxin treatment of the upper face. The horizontal forehead lines, the vertical frown lines between the eyebrows and the crow's feet at the outer corners of the eyes are clearly smoothed and nearly gone; the skin there looks rested and even but still has real pores and fine texture, not plastic. Brow position and eye shape stay natural. ${KEEP}`,

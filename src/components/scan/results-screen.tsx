@@ -1,17 +1,23 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { AppBar, BottomSheet, Button, Card, Chip, ScoreRing } from "@/components/ui";
-import { CONCERN_BY_ID, ZONE_LABEL, simKindFor } from "@/lib/concerns";
+import { simKindFor } from "@/lib/concerns";
 import { SIM_PROVIDER_LABEL } from "@/lib/analysis/models";
+import { markers, previewStrengths, scoreColor, scoreWord, WEAK_BELOW, markerLabel } from "@/lib/scan/scoring";
 import { runSimulation, type SimResult } from "@/lib/sim/client";
+import { cn } from "@/lib/cn";
 import type { Capture, Clinic, ScanResults, SimProvider, Treatment } from "@/lib/types";
 import { BeforeAfter } from "./before-after";
-import { ModelBar, SimPicker, type ModelState } from "./model-bar";
 import { HeatmapPhoto } from "./heatmap-photo";
-import { InlineAfter } from "./inline-after";
-import { MeshViewer } from "./mesh-viewer";
+import { ModelBar, SimPicker, type ModelState } from "./model-bar";
+import { ScanPreview } from "./scan-preview";
 
+/**
+ * Results, top to bottom: score, the AI preview of her weakest areas, the clinic's matched
+ * treatments, the skin map, every marker, scan again. Scores read higher = healthier throughout.
+ */
 export function ResultsScreen({
   clinic,
   treatments,
@@ -20,6 +26,7 @@ export function ResultsScreen({
   scanId,
   firstName,
   onEvent,
+  onRestart,
   models,
 }: {
   clinic: Clinic;
@@ -29,43 +36,40 @@ export function ResultsScreen({
   scanId: string | null;
   firstName?: string;
   onEvent?: (name: string, props?: Record<string, unknown>) => void;
+  onRestart?: () => void;
   models?: ModelState;
 }) {
-  const [active, setActive] = React.useState<string | null>(null);
-  const [sim, setSim] = React.useState<{ treatment: Treatment; result?: SimResult; error?: string; loading: boolean } | null>(null);
   const photoId = React.useMemo(() => scanId ?? `local-${capture.photo.length}-${capture.width}`, [scanId, capture]);
-
-  // Image-model choice for the "after": remembered on this device.
-  const [simProviders, setSimProviders] = React.useState<Array<{ id: SimProvider; configured: boolean }>>([]);
-  const [simProvider, setSimProvider] = React.useState<SimProvider | "auto">("auto");
-  const [simMask, setSimMask] = React.useState(false);
-  React.useEffect(() => {
-    fetch("/api/simulate")
-      .then((r) => r.json())
-      .then((j: { providers?: Array<{ id: SimProvider; configured: boolean }> }) => setSimProviders(j.providers ?? []))
-      .catch(() => {});
-    try {
-      const p = localStorage.getItem("facet:model:sim");
-      const m = localStorage.getItem("facet:model:sim-mask");
-      queueMicrotask(() => {
-        if (p === "auto" || p === "youcam" || p === "gemini" || p === "fal" || p === "openai") setSimProvider(p);
-        if (m) setSimMask(m === "1");
-      });
-    } catch {
-      /* private mode */
-    }
-  }, []);
+  const ms = React.useMemo(() => markers(results), [results]);
+  const weak = ms.filter((m) => m.score < WEAK_BELOW);
+  const sim = React.useMemo(() => previewStrengths(results, results.goals ?? []), [results]);
 
   const recommended = results.recommendations
     .map((r) => ({ ...r, treatment: treatments.find((t) => t.id === r.treatment_id) }))
     .filter((r): r is typeof r & { treatment: Treatment } => Boolean(r.treatment));
 
-  const preview = async (treatment: Treatment, opts: { provider?: SimProvider | "auto"; mask?: boolean } = {}) => {
+  const price = (t: Treatment) => (t.price_cents != null ? `From $${Math.round(t.price_cents / 100).toLocaleString()}` : "Price on consultation");
+  const book = (from: string, t?: Treatment) => {
+    onEvent?.("book_clicked", { from, treatment: t?.name });
+    const url = t?.booking_url || clinic.booking_url;
+    if (url) window.open(url, "_blank", "noopener");
+    else if (clinic.phone) window.location.href = `tel:${clinic.phone.replace(/[^\d+]/g, "")}`;
+  };
+
+  // ---- per-treatment "Preview on my face" sheet (kept from the earlier flow) ----
+  const [sheet, setSheet] = React.useState<{ treatment: Treatment; result?: SimResult; error?: string; loading: boolean } | null>(null);
+  const [simProviders, setSimProviders] = React.useState<Array<{ id: SimProvider; configured: boolean }>>([]);
+  const [simProvider, setSimProvider] = React.useState<SimProvider | "auto">("auto");
+  React.useEffect(() => {
+    fetch("/api/simulate")
+      .then((r) => r.json())
+      .then((j: { providers?: Array<{ id: SimProvider; configured: boolean }> }) => setSimProviders(j.providers ?? []))
+      .catch(() => {});
+  }, []);
+  const preview = async (treatment: Treatment, provider: SimProvider | "auto" = simProvider) => {
     const kind = simKindFor(treatment);
-    const provider = opts.provider ?? simProvider;
-    const useMask = opts.mask ?? simMask;
-    setSim({ treatment, loading: true });
-    onEvent?.("sim_requested", { treatment: treatment.name, kind, provider, mask: useMask });
+    setSheet({ treatment, loading: true });
+    onEvent?.("sim_requested", { treatment: treatment.name, kind, provider });
     try {
       const result = await runSimulation({
         photoId,
@@ -73,58 +77,59 @@ export function ResultsScreen({
         landmarks: capture.landmarks,
         kind,
         provider: provider === "auto" ? undefined : provider,
-        useMask,
+        useMask: false,
         session: models?.session,
         clinicSlug: clinic.slug,
       });
-      setSim({ treatment, result, loading: false });
+      setSheet({ treatment, result, loading: false });
       onEvent?.("sim_viewed", { treatment: treatment.name, kind, provider: result.provider, ms: result.ms });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Preview failed";
-      setSim({ treatment, error: msg, loading: false });
+      setSheet({ treatment, error: msg, loading: false });
       onEvent?.("sim_failed", { treatment: treatment.name, kind, message: msg });
     }
   };
 
-  const price = (t: Treatment) => (t.price_cents != null ? `$${Math.round(t.price_cents / 100).toLocaleString()}` : "Price on consultation");
-  const sevLabel = (s: string) => (s === "none" ? "Clear" : s[0].toUpperCase() + s.slice(1));
-  // The scanner measures paired zones together (both under-eyes, both cheeks); the vision models
-  // pick a side on purpose. Label accordingly.
-  const PAIR_LABEL: Record<string, string> = { under_eye: "Under-eyes", cheek: "Cheeks", crows_feet: "Crow's feet", nasolabial: "Smile lines" };
-  const zoneLabel = (c: ScanResults["concerns"][number]) => {
-    if (results.provider === "youcam") {
-      const base = c.zone.replace(/_(left|right)$/, "");
-      if (base !== c.zone && PAIR_LABEL[base]) return PAIR_LABEL[base];
-    }
-    return ZONE_LABEL[c.zone];
-  };
+  // ---- skin map: the scanner's own drawings when we have them, else our zone tint ----
+  const overlays = React.useMemo(() => {
+    const byId = new Map((results.overlays ?? []).map((o) => [o.id, o.url]));
+    return ms.filter((m) => byId.has(m.id)).map((m) => ({ ...m, url: byId.get(m.id)! }));
+  }, [ms, results.overlays]);
+  const [mapId, setMapId] = React.useState<string | null>(null);
+  const mapActive = overlays.find((o) => o.id === (mapId ?? overlays[0]?.id)) ?? null;
+  const [openMarker, setOpenMarker] = React.useState<string | null>(null);
+  const [heatActive, setHeatActive] = React.useState<string | null>(null);
 
   return (
     <div className="relative mx-auto min-h-dvh w-full max-w-phone bg-white pb-28">
       <AppBar title={clinic.name} logoUrl={clinic.logo_url} right={clinic.is_sample ? <Chip>Sample clinic</Chip> : null} />
 
-      {/* score */}
+      {/* 1. score */}
       <section className="px-4 pt-1">
         <p className="text-[11px] font-medium tracking-[0.12em] text-brand-ink">YOUR RESULTS</p>
-        <h1 className="font-display mt-1 text-[24px]">{firstName ? `${firstName}, here is what we found.` : "Here is what we found."}</h1>
-        {models && (
-          <div className="mt-3">
-            <ModelBar models={models} />
-          </div>
-        )}
+        <h1 className="font-display mt-1 text-[24px]">{firstName ? `${firstName}, here is your skin.` : "Here is your skin."}</h1>
         <div className="mt-4 flex items-center gap-4 rounded-card border border-line bg-surface p-4">
-          <ScoreRing value={results.overall_score} potential={results.potential_score} size={150} label="Skin score" caption={`Potential ${results.potential_score}`} />
-          <div className="min-w-0 flex-1">
-            {results.skin_age != null && (
-              <div>
-                <div className="font-display font-display-numeral text-[32px]">{results.skin_age}</div>
-                <div className="text-[12px] text-ink-muted">skin age estimate</div>
-              </div>
-            )}
-            <MeshViewer landmarks={capture.landmarks} aspect={capture.width / capture.height} size={104} className="-ml-2 mt-1" />
+          <ScoreRing value={results.overall_score} size={148} label="Skin score" caption={scoreWord(results.overall_score)} />
+          <div className="grid min-w-0 flex-1 gap-2.5">
+            <div className="rounded-field bg-surface-muted px-3 py-2.5">
+              <div className="font-display font-display-numeral text-[26px] leading-none">{results.skin_age ?? "—"}</div>
+              <div className="mt-1 text-[11.5px] text-ink-muted">Skin age</div>
+            </div>
+            <div className="rounded-field bg-surface-muted px-3 py-2.5">
+              <div className="font-display font-display-numeral text-[26px] leading-none">{ms.length}</div>
+              <div className="mt-1 text-[11.5px] text-ink-muted">Skin markers</div>
+            </div>
           </div>
         </div>
-        <p className="mt-3 text-[14px] leading-relaxed">{results.insight}</p>
+        <p className="mt-3 text-[14px] leading-relaxed">
+          {weak.length ? (
+            <>
+              <span className="font-medium">Your biggest opportunities:</span> {weak.slice(0, 3).map((m) => m.label.toLowerCase()).join(", ")}.
+            </>
+          ) : (
+            "Every marker is in a healthy range."
+          )}
+        </p>
         {results.medical_flag && (
           <Card tone="brand-soft" padding="sm" className="mt-3">
             <p className="text-[13px] leading-relaxed">
@@ -134,179 +139,218 @@ export function ResultsScreen({
         )}
       </section>
 
-      {/* the after, already rendered: swipe to compare */}
-      {recommended.length > 0 && (
-        <InlineAfter
-          treatments={recommended.map((r) => r.treatment)}
-          capture={capture}
-          photoId={photoId}
-          session={models?.session}
-          clinicSlug={clinic.slug}
-          price={(t) => `${price(t)} at ${clinic.name}`}
-          onBook={(t) => onEvent?.("book_clicked", { from: "inline_after", treatment: t.name })}
-          onEvent={onEvent}
-        />
-      )}
+      {/* 2. AI preview of her weakest areas */}
+      <ScanPreview capture={capture} photoId={photoId} sim={sim} session={models?.session} clinicSlug={clinic.slug} onEvent={onEvent} />
 
-      {/* heat map */}
-      <section className="mt-6 px-4">
-        <HeatmapPhoto photo={capture.photo} landmarks={capture.landmarks} concerns={results.concerns} active={active} overlays={results.overlays} />
-        {results.overlays?.length ? (
-          <p className="mt-2 text-[11px] text-ink-muted">Tap a concern to see the scanner&rsquo;s own view of it on your photo.</p>
-        ) : null}
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <button
-            type="button"
-            onClick={() => setActive(null)}
-            className={`shrink-0 rounded-chip border px-3 py-1.5 text-[12px] font-medium ${active === null ? "border-ink bg-ink text-white" : "border-line-strong bg-surface"}`}
-          >
-            All
-          </button>
-          {results.concerns.map((c) => (
-            <button
-              key={c.id + c.zone}
-              type="button"
-              onClick={() => setActive(active === c.id ? null : c.id)}
-              className={`shrink-0 rounded-chip border px-3 py-1.5 text-[12px] font-medium ${active === c.id ? "border-ink bg-ink text-white" : "border-line-strong bg-surface"}`}
-            >
-              {CONCERN_BY_ID[c.id]?.label ?? c.id}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* concerns */}
-      <section className="mt-6 px-4">
-        <h2 className="font-display text-[17px]">What the scan found</h2>
-        <ul className="mt-3 divide-y divide-line rounded-card border border-line bg-surface">
-          {results.concerns.map((c) => (
-            <li key={c.id + c.zone}>
-              <button
-                type="button"
-                onClick={() => setActive(active === c.id ? null : c.id)}
-                className={`flex w-full items-center justify-between gap-3 p-4 text-left ${active === c.id ? "bg-brand-soft/60" : ""}`}
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-[14px] font-medium">{CONCERN_BY_ID[c.id]?.label ?? c.id}</span>
-                    <Chip severity={c.severity}>{sevLabel(c.severity)}</Chip>
+      {/* 3. recommended */}
+      <section className="mt-7 px-4">
+        <h2 className="font-display text-[19px]">Recommended for you</h2>
+        <p className="mt-0.5 text-[12.5px] text-ink-muted">From the {clinic.name} menu, matched to your scan.</p>
+        {recommended.length ? (
+          <ul className="mt-3 space-y-3">
+            {recommended.map(({ treatment, why, targets }) => (
+              <li key={treatment.id} className="overflow-hidden rounded-card border border-line bg-surface">
+                <Link href={`/s/${clinic.slug}/t/${treatment.id}`} className="flex gap-3 p-3">
+                  {treatment.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- clinic or stock photo URL
+                    <img src={treatment.image_url} alt="" className="size-20 shrink-0 rounded-field object-cover" />
+                  ) : (
+                    <span className="size-20 shrink-0 rounded-field bg-brand-soft" />
+                  )}
+                  <div className="min-w-0">
+                    <h3 className="font-display text-[16px] leading-snug">{treatment.name}</h3>
+                    <p className="mt-1 text-[12.5px] leading-snug text-ink-muted">{targets?.length ? `Targets ${targets.join(", ")}` : why}</p>
+                    <p className="mt-1.5 text-[13px] font-medium">{price(treatment)}</p>
                   </div>
-                  <p className="mt-1 text-[12px] leading-snug text-ink-muted">
-                    {zoneLabel(c)} · {c.reason}
-                  </p>
-                </div>
-                <span className="font-display font-display-numeral text-[20px] text-ink-muted">{100 - c.score}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">{results.disclaimer}</p>
-      </section>
-
-      {/* treatments */}
-      <section className="mt-6 px-4">
-        <h2 className="font-display text-[17px]">Treatments matched to you</h2>
-        <p className="mt-0.5 text-[12px] text-ink-muted">From {clinic.name}&rsquo;s menu, with their prices.</p>
-        <ul className="mt-3 space-y-3">
-          {recommended.map(({ treatment, why }) => (
-            <li key={treatment.id}>
-              <Card padding="sm">
-                <Chip className="h-6 px-2 text-[10px] tracking-wide">TREATMENT</Chip>
-                <div className="mt-2 flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-display text-[16px]">{treatment.name}</h3>
-                    <p className="mt-1 text-[13px] leading-snug text-ink-muted">{treatment.description}</p>
-                  </div>
-                </div>
-                <p className="mt-2 text-[12px] text-ink-muted">
-                  {treatment.result_days && <>Lasts ~{treatment.result_days >= 60 ? `${Math.round(treatment.result_days / 30)} mo` : `${treatment.result_days} days`} · </>}
-                  <span className="text-ink">{price(treatment)}</span>
-                </p>
-                <p className="mt-3 rounded-field bg-brand-soft p-3 text-[13px] leading-snug text-brand-ink">
-                  <span className="font-medium">Why this is relevant to you.</span> {why}
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <Button size="sm" onClick={() => preview(treatment)}>
+                </Link>
+                <div className="flex gap-2 border-t border-line px-3 py-2.5">
+                  <Button size="sm" variant="secondary" onClick={() => preview(treatment)}>
                     Preview on my face
                   </Button>
-                  <Button size="sm" variant="secondary" onClick={() => onEvent?.("book_clicked", { from: "card", treatment: treatment.name })}>
+                  <Button size="sm" variant="ghost" onClick={() => book("card", treatment)}>
                     Book
                   </Button>
                 </div>
-              </Card>
-            </li>
-          ))}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 rounded-card border border-line bg-surface p-4 text-[13.5px] leading-relaxed">
+            Your skin is in great shape. A consultation is the best next step to plan anything you&rsquo;d like to refine.
+          </p>
+        )}
+        <Button full size="lg" className="mt-3" onClick={() => book("results")}>
+          Book a consultation
+        </Button>
+      </section>
+
+      {/* 4. skin map */}
+      <section className="mt-7 px-4">
+        <h2 className="font-display text-[19px]">Your skin map</h2>
+        {overlays.length && mapActive ? (
+          <>
+            <p className="mt-0.5 text-[12.5px] text-ink-muted">Tap a marker to see where the scanner found it.</p>
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {overlays.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => setMapId(o.id)}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-chip border px-3 py-1.5 text-[12px] font-medium",
+                    o.id === mapActive.id ? "border-ink bg-ink text-white" : "border-line-strong bg-surface",
+                  )}
+                >
+                  <span className="size-1.5 rounded-full" style={{ background: scoreColor(o.score) }} />
+                  {o.label}
+                  <span className={o.id === mapActive.id ? "text-white/70" : "text-ink-muted"}>{o.score}</span>
+                </button>
+              ))}
+            </div>
+            <div className="relative mt-2 overflow-hidden rounded-card bg-ink" style={{ aspectRatio: "3 / 4" }}>
+              {results.photo_url && (
+                // eslint-disable-next-line @next/next/no-img-element -- scanner's signed URL
+                <img src={results.photo_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              )}
+              {/* eslint-disable-next-line @next/next/no-img-element -- scanner's signed URL */}
+              <img key={mapActive.url} src={mapActive.url} alt={`Where the scanner found ${mapActive.label.toLowerCase()}`} className="absolute inset-0 h-full w-full object-cover" />
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="mt-0.5 text-[12.5px] text-ink-muted">Where each concern shows on your photo.</p>
+            <HeatmapPhoto className="mt-3" photo={capture.photo} landmarks={capture.landmarks} concerns={results.concerns} active={heatActive} />
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {results.concerns.map((c) => (
+                <button
+                  key={c.id + c.zone}
+                  type="button"
+                  onClick={() => setHeatActive(heatActive === c.id ? null : c.id)}
+                  className={cn("shrink-0 rounded-chip border px-3 py-1.5 text-[12px] font-medium", heatActive === c.id ? "border-ink bg-ink text-white" : "border-line-strong bg-surface")}
+                >
+                  {markerLabel(c.id)}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* 5. every marker */}
+      <section className="mt-7 px-4">
+        <h2 className="font-display text-[19px]">Every marker</h2>
+        <p className="mt-0.5 text-[12.5px] text-ink-muted">Out of 100, higher is healthier. Tap one for what it measures.</p>
+        <ul className="mt-3 divide-y divide-line rounded-card border border-line bg-surface">
+          {ms.map((m) => {
+            const open = openMarker === m.id;
+            return (
+              <li key={m.id}>
+                <button type="button" aria-expanded={open} onClick={() => setOpenMarker(open ? null : m.id)} className="w-full px-4 py-3 text-left">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[14px] font-medium">{m.label}</span>
+                    <span className="font-display-numeral text-[15px] font-medium tabular-nums">{m.score}</span>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                    <div className="h-full rounded-full" style={{ width: `${m.score}%`, background: scoreColor(m.score) }} />
+                  </div>
+                  {open && (
+                    <div className="mt-2 text-[12.5px] leading-snug text-ink-muted">
+                      <p>{m.about}</p>
+                      <p className="mt-1">{m.reason}</p>
+                      {m.id === "fine_lines" && results.zones?.length ? (
+                        <div className="mt-2 grid grid-cols-2 gap-1.5">
+                          {results.zones.map((z) => (
+                            <span key={z.id} className="flex justify-between rounded-field bg-surface-muted px-2.5 py-1.5 text-[12px]">
+                              {z.label}
+                              <span className="font-medium" style={{ color: z.score < WEAK_BELOW ? "#D9544A" : undefined }}>
+                                {z.score}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
-      {/* sticky book bar (Phase 3 wires the booking flow) */}
+      {/* 6. scan again + footer */}
+      <section className="mt-6 px-4">
+        {onRestart && (
+          <Button full variant="secondary" onClick={onRestart}>
+            Scan again
+          </Button>
+        )}
+        <p className="mt-4 text-[11px] leading-relaxed text-ink-muted">
+          {results.provider === "youcam" ? "Skin analysis by Perfect Corp's YouCam AI. " : ""}
+          {results.disclaimer} The preview is an AI simulation, not a promise of results. Your photo is deleted after 72 hours unless you keep it.
+        </p>
+        {models && (
+          <div className="mt-4">
+            <ModelBar models={models} />
+          </div>
+        )}
+      </section>
+
+      {/* sticky book bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-phone border-t border-line bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-        <Button full size="lg" onClick={() => onEvent?.("book_clicked", { from: "results" })}>
+        <Button full size="lg" onClick={() => book("sticky", recommended[0]?.treatment)}>
           {recommended[0] ? `Book ${recommended[0].treatment.name}` : "Book a consultation"}
         </Button>
       </div>
 
-      {/* simulation sheet */}
-      <BottomSheet open={sim !== null} onClose={() => setSim(null)} title={sim?.treatment.name} className="max-h-[92dvh] overflow-y-auto">
-        {sim && (
+      {/* per-treatment preview sheet */}
+      <BottomSheet open={sheet !== null} onClose={() => setSheet(null)} title={sheet?.treatment.name} className="max-h-[92dvh] overflow-y-auto">
+        {sheet && (
           <SimPicker
             providers={simProviders}
             value={simProvider}
-            disabled={sim.loading}
+            disabled={sheet.loading}
             onChange={(p) => {
               setSimProvider(p);
-              try {
-                localStorage.setItem("facet:model:sim", p);
-              } catch {
-                /* ignore */
-              }
-              void preview(sim.treatment, { provider: p });
+              void preview(sheet.treatment, p);
             }}
-            mask={simMask}
-            onMask={(m) => {
-              setSimMask(m);
-              try {
-                localStorage.setItem("facet:model:sim-mask", m ? "1" : "0");
-              } catch {
-                /* ignore */
-              }
-              void preview(sim.treatment, { mask: m });
-            }}
+            mask={false}
+            onMask={() => {}}
           />
         )}
-        {sim?.result && !sim.loading && (
+        {sheet?.result && !sheet.loading && (
           <p className="-mt-2 mb-3 text-[11px] text-ink-muted">
-            Rendered by {SIM_PROVIDER_LABEL[sim.result.provider] ?? sim.result.provider} in {(sim.result.ms / 1000).toFixed(1)} s
+            Rendered by {SIM_PROVIDER_LABEL[sheet.result.provider] ?? sheet.result.provider} in {(sheet.result.ms / 1000).toFixed(1)} s
           </p>
         )}
-        {sim?.loading && (
+        {sheet?.loading && (
           <div className="py-10 text-center">
             <div className="mx-auto size-10 animate-spin rounded-full border-2 border-line border-t-ink" />
             <p className="mt-4 text-[14px] font-medium">Rendering your after</p>
             <p className="mt-1 text-[13px] text-ink-muted">Only the treated zone changes. Everything else stays you.</p>
           </div>
         )}
-        {sim?.error && (
+        {sheet?.error && (
           <div className="py-6">
             <p className="text-[14px] font-medium">The preview didn&rsquo;t render.</p>
-            <p className="mt-1 text-[13px] text-ink-muted">{sim.error}</p>
-            <Button className="mt-4" variant="secondary" onClick={() => preview(sim.treatment)}>
+            <p className="mt-1 text-[13px] text-ink-muted">{sheet.error}</p>
+            <Button className="mt-4" variant="secondary" onClick={() => preview(sheet.treatment)}>
               Try again
             </Button>
           </div>
         )}
-        {sim?.result && (
+        {sheet?.result && (
           <div>
             <BeforeAfter
-              original={sim.result.original}
-              composite={sim.result.composite}
-              width={sim.result.width}
-              height={sim.result.height}
-              onDoseChange={(d) => onEvent?.("dose_changed", { treatment: sim.treatment.name, dose: d })}
+              original={sheet.result.original}
+              composite={sheet.result.composite}
+              width={sheet.result.width}
+              height={sheet.result.height}
+              onDoseChange={(d) => onEvent?.("dose_changed", { treatment: sheet.treatment.name, dose: d })}
             />
             <div className="mt-4 flex items-center justify-between">
-              <span className="text-[13px] text-ink-muted">{price(sim.treatment)} at {clinic.name}</span>
-              <Button size="sm" onClick={() => onEvent?.("book_clicked", { from: "sim", treatment: sim.treatment.name })}>
+              <span className="text-[13px] text-ink-muted">{price(sheet.treatment)} at {clinic.name}</span>
+              <Button size="sm" onClick={() => book("sim", sheet.treatment)}>
                 Book this
               </Button>
             </div>

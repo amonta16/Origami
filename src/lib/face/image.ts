@@ -14,6 +14,40 @@ export async function resizeDataUrl(src: string, maxSide: number, quality = 0.9)
   return { dataUrl: c.toDataURL("image/jpeg", quality), width: c.width, height: c.height };
 }
 
+/**
+ * The photo the skin scanner sees: a 3:4 portrait around the face with the face about 70% of the width
+ * (YouCam rejects faces under 60%), centred a little above the face's middle so the chin has room.
+ * HD analysis needs a short side of 1080 px, so HD is used only when the crop is naturally that big;
+ * otherwise SD at 600–1200 px wide. Same crop for camera shots and uploads.
+ */
+export async function cropForScanner(photo: string, lm: Landmark[]) {
+  const img = await loadImage(photo);
+  const W = img.naturalWidth, H = img.naturalHeight;
+  let minX = 1, minY = 1, maxX = 0, maxY = 0;
+  for (const p of lm) {
+    minX = Math.min(minX, p.x);
+    maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y);
+    maxY = Math.max(maxY, p.y);
+  }
+  const fx = minX * W, fy = minY * H, fw = (maxX - minX) * W, fh = (maxY - minY) * H;
+  let w = fw / 0.7;
+  let h = (w * 4) / 3;
+  if (h > H) { h = H; w = (h * 3) / 4; }
+  if (w > W) { w = W; h = (w * 4) / 3; }
+  const cx = fx + fw / 2, cy = fy + fh * 0.45;
+  const x = Math.max(0, Math.min(W - w, cx - w / 2));
+  const y = Math.max(0, Math.min(H - h, cy - h / 2));
+  const hd = w >= 1080;
+  const outW = Math.round(Math.min(1200, Math.max(hd ? 1080 : 600, w)));
+  const outH = Math.round((outW * 4) / 3);
+  const c = document.createElement("canvas");
+  c.width = outW;
+  c.height = outH;
+  c.getContext("2d")!.drawImage(img, x, y, w, h, 0, 0, outW, outH);
+  return { dataUrl: c.toDataURL("image/jpeg", 0.92), width: outW, height: outH, hd };
+}
+
 /** Crop a zone (with padding) from the photo for the vision model. */
 export async function cropZone(img: HTMLImageElement, lm: Landmark[], zones: ZoneId[], pad = 0.25, outWidth = 320) {
   let minX = 1, minY = 1, maxX = 0, maxY = 0;

@@ -4,15 +4,16 @@ import * as React from "react";
 import { Button } from "@/components/ui";
 import { track } from "@/lib/events";
 import { ANALYSIS_MODELS, analysisModel } from "@/lib/analysis/models";
-import { buildAnalysisCrops, resizeDataUrl } from "@/lib/face/image";
+import { buildAnalysisCrops, cropForScanner } from "@/lib/face/image";
 import type { Capture, Clinic, ScanResults, Treatment } from "@/lib/types";
 import { ClinicTheme } from "@/components/clinic-theme";
 import { AnalyzingScreen } from "./analyzing-screen";
 import { ConsentScreen } from "./consent-screen";
 import { FaceCapture } from "./face-capture";
+import { GoalsScreen, goalConcerns } from "./goals-screen";
 import { ResultsScreen } from "./results-screen";
 
-type Step = "consent" | "capture" | "analyzing" | "results" | "error";
+type Step = "goals" | "consent" | "capture" | "analyzing" | "results" | "error";
 
 const MODEL_KEY = "facet:model:analysis";
 const DEFAULT_MODEL = ANALYSIS_MODELS[0].id;
@@ -35,7 +36,9 @@ export function ScanFlow({
   firstName?: string;
   answers?: Record<string, unknown>;
 }) {
-  const [step, setStep] = React.useState<Step>("consent");
+  const [step, setStep] = React.useState<Step>("goals");
+  // concern ids from the goals step; steer the after-preview and the treatment ranking
+  const [goals, setGoals] = React.useState<string[]>([]);
   const [capture, setCapture] = React.useState<Capture | null>(null);
   const [analyzeStep, setAnalyzeStep] = React.useState(0);
   const [results, setResults] = React.useState<ScanResults | null>(null);
@@ -93,7 +96,7 @@ export function ScanFlow({
       setBusyModel(modelId);
       setModelError(null);
       try {
-        const small = await resizeDataUrl(capture.photo, 1024, 0.9);
+        const small = await cropForScanner(capture.photo, capture.landmarks);
         const crops = await buildAnalysisCrops(capture.photo, capture.landmarks);
         const res = await fetch("/api/analyze", {
           method: "POST",
@@ -111,6 +114,8 @@ export function ScanFlow({
             model: modelId,
             session,
             rerun: true,
+            hd: small.hd,
+            goals,
           }),
         });
         const json = (await res.json()) as { results?: ScanResults; error?: string };
@@ -125,7 +130,7 @@ export function ScanFlow({
         setBusyModel(null);
       }
     },
-    [answers, capture, clinic.slug, ev, firstName, runs, session],
+    [answers, capture, clinic.slug, ev, firstName, goals, runs, session],
   );
 
   const analyze = React.useCallback(
@@ -138,7 +143,8 @@ export function ScanFlow({
       setRuns({});
       setModelError(null);
       try {
-        const small = await resizeDataUrl(cap.photo, 1024, 0.9);
+        // the scanner sees a face crop (face ~70% of the width), HD when the crop is big enough
+        const small = await cropForScanner(cap.photo, cap.landmarks);
         setAnalyzeStep(1);
         const crops = await buildAnalysisCrops(cap.photo, cap.landmarks);
         setAnalyzeStep(2);
@@ -159,6 +165,8 @@ export function ScanFlow({
             answers: answers ?? null,
             model: savedPick ?? undefined,
             session: sess,
+            hd: small.hd,
+            goals,
           }),
         });
         const json = (await res.json()) as { results?: ScanResults; scanId?: string | null; error?: string };
@@ -187,11 +195,22 @@ export function ScanFlow({
         setStep("error");
       }
     },
-    [savedPick, answers, clinic.slug, ev, firstName],
+    [savedPick, answers, clinic.slug, ev, firstName, goals],
   );
 
   let body: React.ReactNode;
-  if (step === "consent") {
+  if (step === "goals") {
+    body = (
+      <GoalsScreen
+        clinic={clinic}
+        onNext={(ids) => {
+          setGoals(goalConcerns(ids));
+          ev("goals_picked", { goals: ids });
+          setStep("consent");
+        }}
+      />
+    );
+  } else if (step === "consent") {
     body = (
       <ConsentScreen
         clinic={clinic}
@@ -223,6 +242,20 @@ export function ScanFlow({
         scanId={scanId}
         firstName={firstName}
         onEvent={ev}
+        onRestart={() => {
+          ev("scan_restarted", {});
+          setCapture(null);
+          setResults(null);
+          setRuns({});
+          setGoals([]);
+          try {
+            sessionStorage.removeItem(`facet:scan:${clinic.slug}`);
+          } catch {
+            /* ignore */
+          }
+          window.scrollTo({ top: 0 });
+          setStep("goals");
+        }}
         models={{ active: activeModel, runs, busy: busyModel, error: modelError, onPick: rerun, session }}
       />
     );
