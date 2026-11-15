@@ -39,7 +39,7 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
   const photos = clinicPhotos(clinic);
   const offerSettings = clinic.settings?.offers ?? {};
   const live = activeSeasonalOffer(clinic.settings?.journey ?? undefined);
-  const seasonal = live ? { offer: resolveOffer(live.def, clinic.name, offerSettings[live.def.key]), claimBy: live.claimBy } : null;
+  const seasonal = live ? { offer: resolveOffer(live.def, clinic.name, offerSettings[live.def.key], patient?.first_name), claimBy: live.claimBy, daysLeft: live.daysLeft } : null;
   const welcomeDef = OFFERS.find((o) => o.key === "offer_welcome")!;
   const welcome = { offer: resolveOffer(welcomeDef, clinic.name, offerSettings.offer_welcome), custom: Boolean(offerSettings.offer_welcome?.gift || offerSettings.offer_welcome?.note) };
   // some sites list only the street; add the city so the map lands in the right town
@@ -78,14 +78,15 @@ async function Home({ params }: { params: PageProps<"/s/[clinic]">["params"] }) 
 
       {/* a gift for you: a switched-on seasonal offer while it runs, else the welcome gift for guests */}
       {seasonal ? (
-        <section className="px-4 pt-8">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="truncate text-[21px] font-semibold tracking-[-0.015em]">{seasonal.offer.headline}</h2>
-            <span className="shrink-0 text-[14px] text-[#7a7d86]">Claim by {seasonal.claimBy}</span>
+        <section className="px-4 pt-8 text-center">
+          <h2 className="text-[22px] font-semibold leading-tight tracking-[-0.015em]">{seasonal.offer.headline}</h2>
+          <p className="mt-1 text-[14px] text-[#6f7380]">{seasonal.offer.subline}</p>
+          <div className="mt-4 text-left">
+            <GiftCard theme={seasonal.offer.theme} label={seasonal.offer.label} tag={seasonal.offer.tag} firstName={patient?.first_name} note={seasonal.offer.note} amountLabel={seasonal.offer.gift} claimBy={seasonal.claimBy} signedIn={Boolean(patient)} />
           </div>
-          <div className="mt-3.5">
-            <GiftCard theme={seasonal.offer.theme} label={seasonal.offer.label} tag={seasonal.offer.tag} note={seasonal.offer.note} amountLabel={seasonal.offer.gift} claimBy={seasonal.claimBy} signedIn={Boolean(patient)} />
-          </div>
+          <p className="mt-2 text-[12px] text-[#9a9ca3]">
+            Expires in {seasonal.daysLeft} {seasonal.daysLeft === 1 ? "day" : "days"} · claim by {seasonal.claimBy}
+          </p>
         </section>
       ) : (
         gift > 0 &&

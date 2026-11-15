@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { AppBar, Button, Card, CardText, CardTitle, Chip, Input, TabBar, Textarea } from "@/components/ui";
 import type { Severity } from "@/components/ui";
+import { GiftArt } from "@/components/patient/gift-art";
+import { OFFERS } from "@/lib/offers";
 import { BottomSheetDemo, ChoiceChipDemo, ControlsDemo, ScoreRingDemo } from "./demos";
 
 export const metadata: Metadata = { title: "Styleguide" };
@@ -188,6 +190,21 @@ export default function StyleguidePage() {
       <Section title="Bottom sheet" note="Booking, consent and confirmations live here on the phone. Escape and backdrop close it. Shown inside a 390px frame.">
         <BottomSheetDemo />
       </Section>
+      <section id="gift-cards" className="mt-14">
+        <h2 className="font-display text-[22px]">Offer gift cards</h2>
+        <p className="mt-1 text-[14px] text-ink-muted">The wrapping for every automated offer, drawn for Origami.</p>
+        <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {OFFERS.map((o) => (
+            <figure key={o.key}>
+              <div className="relative aspect-[1.72] overflow-hidden rounded-[16px] shadow-[0_10px_26px_-12px_rgba(0,0,0,.28)]">
+                <GiftArt theme={o.theme} year={2027} />
+                <span className="font-hand absolute bottom-[9%] left-[5%] -rotate-[9deg] rounded-[4px] bg-[#fdeef3] px-5 py-1.5 text-[26px] leading-none text-[#2a1d22]">First Name</span>
+              </div>
+              <figcaption className="mt-2 text-[13px] text-ink-muted">{o.title}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }

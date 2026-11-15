@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { cn } from "@/lib/cn";
-import { OFFERS, resolveOffer, type OfferDef, type OfferOverride } from "@/lib/offers";
+import { OFFERS, previewClaimBy, previewDays, resolveOffer, type OfferOverride } from "@/lib/offers";
+import { GiftArt } from "@/components/patient/gift-art";
 import { GiftSwatch, ThemedGift } from "@/components/patient/gift-card";
 import { CoverPhoto, ItemArt } from "@/components/patient/item-art";
 import { Icon } from "@/components/patient/icons";
@@ -17,12 +18,6 @@ export type OfferPreviewData = {
   heroFallback: string;
   treatments: Array<{ id: string; name: string; image_url: string | null; image_fallback?: string; price_cents: number | null }>;
 };
-
-/** Claim-by line for the preview: the offer's last day, or a week from today for person-based offers. */
-function claimByFor(def: OfferDef) {
-  if (def.window) return new Date(Date.UTC(new Date().getUTCFullYear(), def.window.month - 1, def.window.to, 12)).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-  return new Date(Date.now() + 7 * 864e5).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Los_Angeles" });
-}
 
 /**
  * App Builder → Journey → Automated offers. Each offer has a themed, wrapped gift; pick one to
@@ -51,7 +46,7 @@ export function OffersEditor({
 
   const def = OFFERS.find((o) => o.key === selected)!;
   const draft = drafts[selected] ?? {};
-  const shown = resolveOffer(def, preview.clinicName, draft);
+  const shown = resolveOffer(def, preview.clinicName, draft, "First Name");
   const dirty = (draft.gift ?? "") !== (saved[selected]?.gift ?? "") || (draft.note ?? "") !== (saved[selected]?.note ?? "");
 
   const toggle = async (key: string, v: boolean) => Boolean(await run(`/api/desk/${slug}/settings`, "PATCH", { journey: { [key]: v } }, { refresh: false }));
@@ -93,7 +88,7 @@ export function OffersEditor({
                     aria-pressed={active}
                     className="flex min-w-0 flex-1 items-center gap-3.5 text-left"
                   >
-                    <GiftSwatch theme={o.theme} className={cn("size-10", active && "ring-2 ring-brand ring-offset-2")} />
+                    <GiftSwatch theme={o.theme} className={cn("h-[52px] w-[86px]", active && "ring-2 ring-brand ring-offset-2")} />
                     <span className="min-w-0">
                       <span className="block text-[14px] font-medium">{o.title}</span>
                       <span className="block truncate text-[12px] text-ink-muted">
@@ -132,7 +127,7 @@ export function OffersEditor({
 
       <div className="lg:sticky lg:top-4 lg:self-start">
         <p className="mb-2 text-center text-[12px] font-medium text-ink-muted">What patients see · {def.title}</p>
-        <PhonePreview data={preview} offer={shown} claimBy={claimByFor(def)} wrapKey={`${selected}-${wrapKey}`} />
+        <PhonePreview data={preview} offer={shown} claimBy={previewClaimBy(def)} days={previewDays(def, new Date().getFullYear())} wrapKey={`${selected}-${wrapKey}`} />
         <div className="mt-3 flex justify-center">
           <button type="button" onClick={() => setWrapKey((k) => k + 1)} className="rounded-chip px-3 py-1.5 text-[12px] font-medium text-ink-muted hover:bg-surface-muted hover:text-ink">
             Wrap it again
@@ -144,11 +139,34 @@ export function OffersEditor({
   );
 }
 
-/** The patient home screen, top section, drawn with the app's own pieces. */
-function PhonePreview({ data, offer, claimBy, wrapKey }: { data: OfferPreviewData; offer: ReturnType<typeof resolveOffer>; claimBy: string; wrapKey: string }) {
+/**
+ * The patient's phone when the offer lands: the push notification, the themed banner with how
+ * long it lasts, the home screen top, then the wrapped gift. Drawn with the app's own pieces.
+ */
+function PhonePreview({ data, offer, claimBy, days, wrapKey }: { data: OfferPreviewData; offer: ReturnType<typeof resolveOffer>; claimBy: string; days: number; wrapKey: string }) {
   const grid = data.treatments.slice(0, 4);
   return (
-    <div className="mx-auto w-[300px]">
+    <div className="relative mx-auto w-[300px] pt-14">
+      {/* push notification */}
+      <div className="absolute inset-x-[-14px] top-0 z-20 flex items-start gap-2.5 rounded-[20px] bg-[#ececee]/95 p-2.5 shadow-[0_14px_30px_-14px_rgba(0,0,0,.45)] backdrop-blur-md">
+        <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-[9px] bg-white">
+          {data.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={data.logoUrl} alt="" className="max-h-7 max-w-7 object-contain" />
+          ) : (
+            <span className="text-[13px] font-semibold">{data.clinicName.charAt(0)}</span>
+          )}
+        </span>
+        <span className="min-w-0 flex-1 leading-snug">
+          <span className="flex items-baseline justify-between gap-2">
+            <span className="truncate text-[12.5px] font-semibold text-[#111318]">{offer.headline}</span>
+            <span className="shrink-0 text-[10.5px] text-[#7a7d86]">now</span>
+          </span>
+          <span className="block text-[12px] text-[#2a2d34]">{offer.subline.replace(/…$/, "")}… Tap to open!</span>
+        </span>
+        <GiftSwatch theme={offer.theme} className="h-9 w-9 self-center" />
+      </div>
+
       <div className="relative aspect-[9/19] rounded-[46px] border-[10px] border-[#111318] bg-[#111318] shadow-[0_40px_80px_-35px_rgba(17,19,24,.5)]">
         <div className="patient-font absolute inset-0 overflow-hidden rounded-[36px] bg-white">
           <div className="relative z-10 flex h-9 items-center justify-between bg-white px-6 text-[11px] font-semibold">
@@ -157,52 +175,58 @@ function PhonePreview({ data, offer, claimBy, wrapKey }: { data: OfferPreviewDat
             <span className="h-2 w-5 rounded-[3px] border border-current" aria-hidden="true" />
           </div>
           <div className="absolute inset-x-0 bottom-0 top-9 overflow-y-auto [scrollbar-width:none]">
+            {/* themed banner */}
+            <div className="relative flex h-[52px] items-center justify-between overflow-hidden px-3.5">
+              <span className="absolute inset-0 scale-110 blur-[1px]">
+                <GiftArt theme={offer.theme} />
+              </span>
+              <span aria-hidden="true" className="absolute inset-0 bg-black/40" />
+              <span className="relative truncate pr-2 text-[13px] font-semibold text-white drop-shadow">{offer.headline}</span>
+              <span className="relative flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[10.5px] font-medium text-[#111318]">
+                <span className="size-2 rounded-full bg-[#ef4444] shadow-[0_0_0_2px_rgba(239,68,68,.25)]" />
+                Expires in {days} {days === 1 ? "day" : "days"}
+              </span>
+            </div>
             {/* app bar */}
-            <div className="flex h-12 items-center justify-between px-4">
+            <div className="flex h-11 items-center justify-between px-4">
               {data.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={data.logoUrl} alt={data.clinicName} className="h-8 max-w-[130px] object-contain object-left" />
+                <img src={data.logoUrl} alt={data.clinicName} className="h-7 max-w-[120px] object-contain object-left" />
               ) : (
-                <span className="truncate text-[16px] font-semibold">{data.clinicName}</span>
+                <span className="truncate text-[15px] font-semibold">{data.clinicName}</span>
               )}
               <span className="flex gap-3 text-[#111318]">
                 <Icon name="search" className="size-[18px]" />
                 <Icon name="bag" className="size-[18px]" />
               </span>
             </div>
-            {/* hero + points */}
+            {/* hero strip + points */}
             <div className="relative">
-              <div className="relative aspect-[4/3] overflow-hidden bg-brand-deep">
+              <div className="relative h-[54px] overflow-hidden bg-brand-deep">
                 <CoverPhoto src={data.hero} fallback={data.heroFallback} alt="" />
-                <div aria-hidden="true" className="absolute inset-x-0 top-0 h-3/5 bg-gradient-to-b from-black/45 to-transparent" />
-                <div className="absolute left-4 right-4 top-4 text-white">
-                  <p className="text-[18px] font-bold leading-tight drop-shadow-sm">Welcome back!</p>
-                  <p className="mt-0.5 truncate text-[12px] text-white/75">{data.clinicName}</p>
-                </div>
               </div>
-              <div className="relative z-10 -mt-[22px] px-3">
-                <div className="flex h-11 items-center gap-2 rounded-[16px] bg-white px-3.5 shadow-[0_10px_28px_-10px_rgba(17,19,24,.28)]">
-                  <span className="text-[15px] font-semibold tabular-nums">350</span>
+              <div className="relative z-10 -mt-[24px] px-3">
+                <div className="flex h-11 items-center gap-2 rounded-[14px] bg-white px-3.5 shadow-[0_10px_28px_-10px_rgba(17,19,24,.28)]">
+                  <span className="text-[15px] font-semibold tabular-nums text-brand">350</span>
                   <span className="min-w-0 flex-1 truncate text-[12px] text-[#6f7380]">{data.clinicName} points</span>
                   <Icon name="chevron" className="size-3.5 shrink-0" strokeWidth={2} />
                 </div>
               </div>
             </div>
             {/* the offer */}
-            <section className="px-3 pt-6">
-              <div className="flex items-baseline justify-between gap-2">
-                <h3 className="truncate text-[17px] font-semibold tracking-[-0.015em]">{offer.headline}</h3>
-                <span className="shrink-0 text-[11.5px] text-[#7a7d86]">Claim by {claimBy}</span>
-              </div>
-              <div className="mt-3 [&_.gift-hint]:text-[12px] [&_.gift-tag]:text-[22px]">
-                <ThemedGift key={wrapKey} theme={offer.theme} label={offer.label} tag={offer.tag} gift={offer.gift} note={offer.note}>
+            <section className="px-3 pt-6 text-center">
+              <h3 className="text-[19px] font-semibold leading-tight tracking-[-0.015em]">{offer.headline}</h3>
+              <p className="mt-1 text-[13px] text-[#6f7380]">{offer.subline}</p>
+              <div className="mt-4 text-left [&_.gift-hint]:text-[12px] [&_.gift-tag]:text-[21px]">
+                <ThemedGift key={wrapKey} theme={offer.theme} label={offer.label} tag="First Name" gift={offer.gift} note={offer.note}>
                   <span className="gift-claim mt-2.5 flex h-[42px] w-full items-center justify-center rounded-[12px] bg-brand text-[14px] font-semibold text-white">Claim my gift</span>
                 </ThemedGift>
               </div>
+              <p className="mt-2 text-[11px] text-[#9a9ca3]">Claim by {claimBy}</p>
             </section>
             {/* popular */}
             {grid.length > 0 && (
-              <section className="px-3 pb-8 pt-7">
+              <section className="px-3 pb-8 pt-6">
                 <h3 className="text-center text-[16px] font-semibold">Popular right now</h3>
                 <div className="mt-3 grid grid-cols-2 gap-x-2.5 gap-y-4">
                   {grid.map((t) => (

@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { FlockBackground } from "@/components/marketing/flock";
 import type { SpaSuggestion } from "@/lib/funnel/suggest";
 
 type Step = "find" | "read" | "menu" | "brand" | "build";
@@ -164,7 +166,14 @@ export function OwnerFunnel() {
   };
 
   if (phase === "building" || (phase === "error" && Object.values(steps).some((s) => s.status !== "wait"))) {
-    return <BuildScreen steps={steps} brand={brand} tiles={tiles} name={name} query={query || website} error={phase === "error" ? message : null} onRetry={() => setPhase("idle")} />;
+    // Portal to <body>: the landing hero is its own stacking context, so a z-50 overlay inside it
+    // would still sit under the cards further down the page.
+    return createPortal(
+      <div className="brand-type">
+        <BuildScreen steps={steps} brand={brand} tiles={tiles} name={name} query={query || website} error={phase === "error" ? message : null} onRetry={() => setPhase("idle")} />
+      </div>,
+      document.body,
+    );
   }
 
   const q = query.trim();
@@ -402,8 +411,17 @@ function BuildScreen({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-page" style={{ ["--b" as string]: color }}>
+      {/* same flock of paper birds as the landing page */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0">
+        <FlockBackground />
+      </div>
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 transition-opacity duration-1000" style={{ opacity: brand ? 1 : 0, background: `radial-gradient(70% 55% at 30% 40%, ${color}22, transparent 70%)` }} />
-      <div className="relative mx-auto grid min-h-dvh max-w-5xl items-center gap-10 px-6 py-10 md:grid-cols-[minmax(0,380px)_1fr]">
+      <header className="relative mx-auto flex w-full max-w-6xl items-center gap-2 px-5 py-4 sm:px-8">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/atlas-engine-bird.png" alt="" width={32} height={32} className="size-8" />
+        <span className="font-brand-serif text-[25px] leading-none">Origami</span>
+      </header>
+      <div className="relative mx-auto grid min-h-[calc(100dvh-72px)] max-w-5xl items-center gap-10 px-6 pb-10 md:grid-cols-[minmax(0,380px)_1fr]">
         {/* the phone that builds itself */}
         <div className="mx-auto w-[280px] md:w-[320px]">
           <div className="relative aspect-[9/19] rounded-[46px] border-[10px] border-[#111318] bg-white shadow-[0_40px_80px_-30px_rgba(17,19,24,.45)]">
@@ -458,7 +476,17 @@ function BuildScreen({
         <div aria-live="polite">
           <p className="text-[13px] text-ink-muted">{query}</p>
           <h1 className="font-display mt-2 text-[34px] leading-[1.05] sm:text-[44px]">
-            {finished ? `${name ?? "Your"} app is ready.` : error ? "We hit a snag." : "Building your app…"}
+            {finished ? (
+              <>
+                {name ?? "Your"} <span className="chrome-text">app is ready.</span>
+              </>
+            ) : error ? (
+              "We hit a snag."
+            ) : (
+              <>
+                Building <span className="chrome-text">your app</span>…
+              </>
+            )}
           </h1>
           <ol className="mt-8 flex flex-col gap-4">
             {STEPS.map((s, i) => {

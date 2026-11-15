@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { Bonuses } from "@/components/funnel/bonuses";
+import { FlockBackground } from "@/components/marketing/flock";
 import { ClinicTheme } from "@/components/clinic-theme";
 import { BookCallButton, FixItButton, LookAroundButton, PhoneFrame } from "@/components/funnel/preview-client";
 import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
@@ -40,7 +41,22 @@ async function Preview({ params }: { params: PageProps<"/p/[slug]">["params"] })
         {clinic.is_preview ? "This is a private preview of your app. It isn't live for patients yet." : `${clinic.name}'s app`}
       </div>
 
-      <main className="mx-auto grid w-full max-w-6xl gap-10 px-5 pb-16 pt-6 md:grid-cols-[auto_minmax(0,1fr)] md:gap-14 md:px-8 md:pt-10">
+      <div className="relative isolate">
+      {/* same flock of paper birds as the landing page, fading out down the page */}
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[1100px] overflow-hidden [mask-image:linear-gradient(180deg,#000_0%,#000_55%,transparent_100%)]">
+        <FlockBackground />
+      </div>
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4 md:px-8">
+        <Link href="/" className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/atlas-engine-bird.png" alt="" width={32} height={32} className="size-8" />
+          <span className="font-brand-serif text-[25px] leading-none">Origami</span>
+        </Link>
+        <Link href="/" className="rounded-[10px] border border-line-strong bg-surface/80 px-4 py-2 text-[14px] font-medium backdrop-blur-sm hover:border-ink">
+          Build another
+        </Link>
+      </header>
+      <main className="mx-auto grid w-full max-w-6xl gap-10 px-5 pb-16 pt-2 md:grid-cols-[auto_minmax(0,1fr)] md:gap-14 md:px-8 md:pt-4">
         {/* phone */}
         <div className="flex flex-col items-center gap-2 md:sticky md:top-6 md:self-start">
           {owner ? (
@@ -60,7 +76,7 @@ async function Preview({ params }: { params: PageProps<"/p/[slug]">["params"] })
           <h1 className="font-display text-[34px] leading-[1.06] sm:text-[44px]">
             {clinic.name},
             <br />
-            this is your app.
+            this is <span className="chrome-text">your app.</span>
           </h1>
           <div className="mt-6 grid grid-cols-2 gap-2.5 sm:flex">
             <BookCallButton slug={clinic.slug} spaName={shortName} />
@@ -142,6 +158,7 @@ async function Preview({ params }: { params: PageProps<"/p/[slug]">["params"] })
           </p>
         </div>
       </main>
+      </div>
     </ClinicTheme>
   );
 }
