@@ -1,4 +1,0 @@
-[    2351ms] [WARNING] W1115 05:46:29.700999 2210688 face_landmarker_graph.cc:181] Sets FaceBlendshapesGraph acceleration to xnnpack by default. @ https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm/vision_wasm_internal.js:8667
-[    2391ms] [LOG] I1115 05:46:29.740999 2210688 gl_context.cc:408] GL version: 3.0 (OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))), renderer: WebKit WebGL @ https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm/vision_wasm_internal.js:4909
-[    2392ms] [WARNING] W1115 05:46:29.742000 2210688 gl_context.cc:1136] OpenGL error checking is disabled @ https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm/vision_wasm_internal.js:8667
-[    2394ms] [LOG] Graph successfully started running. @ https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm/vision_wasm_internal.js:1337
