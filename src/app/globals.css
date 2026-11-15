@@ -253,3 +253,66 @@ html:has(.patient-app)::-webkit-scrollbar {
   .scan-sweep { animation: none; opacity: 0; }
   .signal-fade { animation: none; }
 }
+
+/* ROI calculator (/roi): pink accent, page glow and the range slider. */
+.roi-pink {
+  color: #c2307f;
+}
+.roi-glow {
+  background: radial-gradient(60% 70% at 30% 0%, #fbe3ef 0%, rgba(251, 227, 239, 0.55) 45%, transparent 100%);
+}
+.roi-range {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.roi-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c2307f 0 var(--pct), var(--line) var(--pct) 100%);
+}
+.roi-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+}
+.roi-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: #c2307f;
+}
+.roi-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #c2307f;
+  box-shadow: 0 2px 8px rgba(194, 48, 127, 0.25);
+  transition: transform 0.15s ease;
+}
+.roi-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #c2307f;
+  box-shadow: 0 2px 8px rgba(194, 48, 127, 0.25);
+}
+.roi-range:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+.roi-range:focus-visible {
+  outline: none;
+}
+.roi-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
