@@ -32,5 +32,5 @@ Startup Launch Award.
 ## Links
 
 - Live: https://facet-tau-weld.vercel.app
-- Repo: https://github.com/amonta16/facet (public since Sat Nov 14, 1:15 PM)
+- Repo: https://github.com/amonta16/Origami (public since Sat Nov 14, ~1:15 PM; the old /facet address redirects here)
 - Demo video (< 2 min, unlisted): [URL]
