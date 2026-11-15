@@ -52,6 +52,7 @@ Every open-source library, API, font and model used in Facet, with its license a
 |---|---|---|
 | [Blender](https://www.blender.org) 5.3 | GPL-2.0-or-later | Renders the animated "time on the phone by generation" donut chart (`video/phone-time-donut/`), built entirely by a Python script; Eevee, H.264 out |
 | [FFmpeg](https://ffmpeg.org) 9 (Gyan.dev build) | LGPL-2.1-or-later / GPL-2.0-or-later | Turns the rendered loop into a GIF; also used earlier for the interview brief and the logo cut-out |
+| [OpenCV](https://opencv.org) 5.0 (`opencv-python-headless`) | Apache-2.0 | Demo video only (edit pipeline outside the repo): finds and blurs MedSpa SLO's logo, name and address in the 3D app shots, frame by frame |
 | Segoe UI (Windows system font) | Microsoft, bundled with Windows | Type in that render; nothing is redistributed |
 | Data: [reviews.org](https://www.reviews.org) survey of daily phone time by generation | — | The four numbers shown in the chart, credited on screen |
 

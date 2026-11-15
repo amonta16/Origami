@@ -94,7 +94,8 @@ The 59 words of VO are about 25 seconds. Marison speaks for about 55 seconds, so
 
 ## Must fix before this goes public
 
-1. **"MEDSPASLO" branding is all over the 3D app screens** (3D-A 0:45–1:10, 3D-C throughout). MedSpa SLO is a real
+1. **Done in the rough cut, Sun ~7 AM: blurred.** (`deface.py` + the `deface` stage of `build.py`.) Original note:
+   **"MEDSPASLO" branding is all over the 3D app screens** (3D-A 0:45–1:10, 3D-C throughout). MedSpa SLO is a real
    business that isn't a customer. Viewers would read it as an endorsement, so replace or blur the logo in those
    shots, or get MedSpa SLO's written OK.
 2. **Label sample data.** The 3D screens show a made-up patient ("Sofia Martinez") and an example face. Put a small
