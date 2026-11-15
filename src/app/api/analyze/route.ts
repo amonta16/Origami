@@ -349,7 +349,8 @@ export async function POST(req: Request) {
   // Normalize: severity must match score; sort worst first; potential >= overall.
   const concerns = raw.concerns
     .map((c) => ({ ...c, score: Math.round(c.score), severity: severityFromScore(c.score) }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score)
+    .filter((c, i, all) => all.findIndex((d) => d.id === c.id) === i); // a model can list one concern twice; keep the worst
   const treatmentIds = new Set(treatments.map((t) => t.id));
   const recommendations = raw.recommendations.filter((r) => treatmentIds.has(r.treatment_id)).slice(0, 3);
   const results: ScanResults = {

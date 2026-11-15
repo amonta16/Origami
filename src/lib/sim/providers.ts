@@ -105,44 +105,48 @@ async function youcam(input: EditInput): Promise<Omit<EditOutput, "ms">> {
     if (!imgRes.ok) throw new Error(`YouCam result download failed (HTTP ${imgRes.status})`);
     return Buffer.from(await imgRes.arrayBuffer());
   };
+  // Indoor selfies lit from above are often "too dark" for YouCam even at normal exposure (a webcam
+  // selfie at mean level 131/255 was turned down; gamma lifts didn't help, a plain gain did). Failed
+  // tasks cost nothing, so retry with the photo multiplied by a rising gain, then divide the result by
+  // the same gain and take the original pixel wherever the brightened copy clipped: the "after" keeps
+  // the original exposure, so the preview never looks better just because it is brighter.
+  const renderLit = async (src: Buffer): Promise<Buffer> => {
+    try {
+      return await render(`data:image/jpeg;base64,${src.toString("base64")}`);
+    } catch (e) {
+      if (!(e instanceof YoucamError && e.code === "error_lighting_dark")) throw e;
+      let last: unknown = e;
+      for (const gain of [1.35, 1.6, 1.9]) {
+        try {
+          console.info(`youcam sim: "too dark", retrying at gain ${gain}`);
+          const res = await render(`data:image/jpeg;base64,${(await withGain(src, gain)).toString("base64")}`);
+          return await undoGain(res, src, gain);
+        } catch (e2) {
+          last = e2;
+          if (!(e2 instanceof YoucamError && e2.code === "error_lighting_dark")) break;
+        }
+      }
+      throw last;
+    }
+  };
   try {
+    const src = Buffer.from(input.image.split(",")[1], "base64");
     let out: Buffer;
     try {
-      out = await render(input.image);
+      out = await renderLit(src);
     } catch (e) {
-      if (!(e instanceof YoucamError)) throw e;
-      const src = Buffer.from(input.image.split(",")[1], "base64");
-      if (e.code === "error_lighting_dark") {
-        // Indoor phone selfies are often "too dark" for the simulator while the scan itself went fine.
-        // Failed tasks cost nothing, so retry with the photo brightened by a gamma curve, then put the
-        // exact inverse curve on the result: the "after" keeps the original exposure, so the preview never
-        // looks better just because it is brighter.
-        let last: unknown = e;
-        let fixed: Buffer | null = null;
-        for (const target of [0.5, 0.62]) {
-          try {
-            const { buf, p } = await gammaToMean(src, target);
-            const res = await render(`data:image/jpeg;base64,${buf.toString("base64")}`);
-            fixed = await applyGamma(res, 1 / p);
-            break;
-          } catch (e2) {
-            last = e2;
-            if (!(e2 instanceof YoucamError && e2.code === "error_lighting_dark")) break;
-          }
-        }
-        if (!fixed) throw last;
-        out = fixed;
-      } else if (e.code === "error_src_face_out_of_bound") {
-        // A close-up selfie can crop the forehead or chin, which the skin simulator rejects as "face out of bound".
-        // Retry once with the photo extended above and below (mirrored edges), then crop back to the original
-        // frame. Width is untouched, so the "face fills 60% of the width" rule still holds.
-        const meta = await sharp(src).metadata();
-        const W = meta.width ?? 0, H = meta.height ?? 0;
-        const pad = Math.round(H * 0.18);
-        const padded = await sharp(src).extend({ top: pad, bottom: pad, extendWith: "mirror" }).jpeg({ quality: 92 }).toBuffer();
-        const res = await render(`data:image/jpeg;base64,${padded.toString("base64")}`);
-        out = await sharp(res).resize(W, H + 2 * pad, { fit: "fill" }).extract({ left: 0, top: pad, width: W, height: H }).jpeg({ quality: 92 }).toBuffer();
-      } else throw e;
+      // A close-up selfie can crop the forehead or chin, which the skin simulator rejects as "face out of bound".
+      // Retry with the photo extended above and below (mirrored edges), then crop back to the original frame.
+      // Width is untouched, so the "face fills 60% of the width" rule still holds. The mirrored hair and
+      // clothing can make the padded photo read "too dark", so it goes through the same brightness retry.
+      if (!(e instanceof YoucamError && e.code === "error_src_face_out_of_bound")) throw e;
+      console.info("youcam sim: face out of bound, retrying padded");
+      const meta = await sharp(src).metadata();
+      const W = meta.width ?? 0, H = meta.height ?? 0;
+      const pad = Math.round(H * 0.18);
+      const padded = await sharp(src).extend({ top: pad, bottom: pad, extendWith: "mirror" }).jpeg({ quality: 92 }).toBuffer();
+      const res = await renderLit(padded);
+      out = await sharp(res).resize(W, H + 2 * pad, { fit: "fill" }).extract({ left: 0, top: pad, width: W, height: H }).jpeg({ quality: 92 }).toBuffer();
     }
     const head = out.subarray(0, 4).toString("hex");
     const mime = head.startsWith("89504e47") ? "image/png" : "image/jpeg";
@@ -155,21 +159,26 @@ async function youcam(input: EditInput): Promise<Omit<EditOutput, "ms">> {
   }
 }
 
-/** Every channel through v → 255·(v/255)^p, as a JPEG. */
-async function applyGamma(img: Buffer, p: number) {
-  const { data, info } = await sharp(img).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const lut = new Uint8Array(256);
-  for (let v = 0; v < 256; v++) lut[v] = Math.round(255 * (v / 255) ** p);
-  for (let i = 0; i < data.length; i++) data[i] = lut[data[i]];
-  return sharp(data, { raw: { width: info.width, height: info.height, channels: info.channels } }).jpeg({ quality: 93 }).toBuffer();
+/** The photo with every channel multiplied by `gain` (clipping at white), as a JPEG. */
+async function withGain(img: Buffer, gain: number) {
+  return sharp(img).removeAlpha().linear(gain, 0).jpeg({ quality: 94 }).toBuffer();
 }
 
-/** Brighten with one gamma curve so the photo's mean level lands on `target` (0..1); returns the exponent used. */
-async function gammaToMean(img: Buffer, target: number) {
-  const { channels } = await sharp(img).stats();
-  const mean = Math.max(0.02, Math.min(0.98, channels.slice(0, 3).reduce((s, c) => s + c.mean, 0) / 3 / 255));
-  const p = Math.max(0.35, Math.min(0.9, Math.log(target) / Math.log(mean)));
-  return { buf: await applyGamma(img, p), p };
+/**
+ * Undo `withGain` on YouCam's result: divide by the gain, and wherever the brightened input had clipped
+ * (any channel ≥ 250 there), use the original pixel, since the division can't bring that detail back.
+ */
+async function undoGain(result: Buffer, original: Buffer, gain: number) {
+  const o = await sharp(original).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: W, height: H } = o.info;
+  const r = await sharp(result).removeAlpha().resize(W, H, { fit: "fill" }).raw().toBuffer();
+  const out = Buffer.alloc(W * H * 3);
+  for (let i = 0; i < W * H; i++) {
+    const a = i * 3;
+    const clipped = Math.max(o.data[a], o.data[a + 1], o.data[a + 2]) * gain >= 250;
+    for (let c = 0; c < 3; c++) out[a + c] = clipped ? o.data[a + c] : Math.min(255, Math.round(r[a + c] / gain));
+  }
+  return sharp(out, { raw: { width: W, height: H, channels: 3 } }).jpeg({ quality: 93 }).toBuffer();
 }
 
 function splitDataUrl(d: string) {

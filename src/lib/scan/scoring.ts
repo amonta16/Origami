@@ -62,7 +62,10 @@ export function markerLabel(id: string) {
 
 /** All markers, weakest first, on the higher-is-better scale. */
 export function markers(results: ScanResults): Marker[] {
-  return results.concerns
+  // A vision model can list one concern twice; keep its worst reading once.
+  const worst = new Map<string, ScanResults["concerns"][number]>();
+  for (const c of results.concerns) if (!worst.has(c.id) || c.score > worst.get(c.id)!.score) worst.set(c.id, c);
+  return [...worst.values()]
     .map((c) => ({ id: c.id, label: markerLabel(c.id), score: 100 - c.score, about: MARKER_ABOUT[c.id] ?? CONCERN_BY_ID[c.id]?.blurb ?? "", reason: c.reason }))
     .sort((a, b) => a.score - b.score);
 }
