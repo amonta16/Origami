@@ -105,5 +105,13 @@ export async function POST(req: Request) {
     }
   }
   const last = failures[failures.length - 1];
-  return NextResponse.json({ error: last.error, provider: last.provider, failures }, { status: 502 });
+  // Providers return paragraphs of billing text on a quota miss; the patient gets one plain line
+  // and the raw message stays in `detail` for the lab.
+  const quota = /quota|rate.?limit|billing|credit|insufficient|resource_exhausted|\b429\b/i.test(last.error);
+  const friendly = quota
+    ? "The after-preview isn't available right now: the image model has hit its usage limit. Your scan results are unaffected."
+    : last.error.length > 220
+      ? `${last.error.slice(0, 200)}…`
+      : last.error;
+  return NextResponse.json({ error: friendly, detail: last.error.slice(0, 500), provider: last.provider, failures }, { status: 502 });
 }

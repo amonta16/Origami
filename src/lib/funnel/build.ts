@@ -2,6 +2,7 @@ import "server-only";
 import { randomInt } from "node:crypto";
 import { geminiStructured } from "@/lib/analysis/gemini";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { inferTreatmentTags } from "@/lib/treatments/tags";
 import { extractFacts, fetchPage, menuLinks, nameMatches, normalizeUrl, type SiteFacts } from "./site";
 
 /**
@@ -225,6 +226,9 @@ export async function buildPreview(input: { query: string; website: string | nul
         image_url: img(t.image_index),
         popular: anyPopular ? Boolean(t.popular) : i < 4,
         sort: i + 1,
+        // Which concerns and zones this treatment addresses, inferred from its own wording, so the
+        // scan can match findings to this clinic's menu (the website never says this explicitly).
+        ...inferTreatmentTags(t.name, t.description, CATS.includes(t.category) ? t.category : "consult"),
       })),
     );
   }

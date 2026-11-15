@@ -1,4 +1,5 @@
 import { CONCERNS } from "@/lib/concerns";
+import { inferTreatmentTags } from "@/lib/treatments/tags";
 import type { Treatment } from "@/lib/types";
 
 export function analysisSystemPrompt() {
@@ -23,8 +24,12 @@ export function analysisUserPrompt(input: {
   cropIds: string[];
   source: "camera" | "upload";
 }) {
+  // Menus built from a website carry no hand-tagged concerns; infer them so the model can match.
   const menu = input.treatments
-    .map((t) => `- id=${t.id} | ${t.name} | concerns: ${t.concerns.join(", ")} | zones: ${t.zones.join(", ")}`)
+    .map((t) => {
+      const tags = t.concerns?.length ? { concerns: t.concerns, zones: t.zones } : inferTreatmentTags(t.name, t.description, t.category);
+      return `- id=${t.id} | ${t.name} | concerns: ${tags.concerns.join(", ") || "general"} | zones: ${tags.zones.join(", ") || "full_face"}`;
+    })
     .join("\n");
   const answers = input.answers ? `Her answers: ${JSON.stringify(input.answers)}` : "No questionnaire answers.";
   return [

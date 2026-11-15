@@ -1,6 +1,7 @@
 import "server-only";
 
 import { CONCERN_BY_ID, severityFromScore } from "@/lib/concerns";
+import { inferTreatmentTags } from "@/lib/treatments/tags";
 import type { ConcernResult, Recommendation, Treatment, ZoneId } from "@/lib/types";
 
 /**
@@ -189,17 +190,27 @@ function firstUrl(m: string[] | Record<string, string> | string | undefined) {
   return v[0] ?? null;
 }
 
-/** Pick 1–3 menu items whose declared concerns overlap her worst findings, worst first. */
+/**
+ * Pick 1–3 menu items whose concerns overlap her worst findings, worst first. Menus built from a
+ * clinic's website carry no hand-tagged concerns, so those are inferred from the treatment's name
+ * and description. If nothing overlaps, offer the clinic's most popular item as a starting point,
+ * labeled as such.
+ */
 function recommend(concerns: ConcernResult[], treatments: Treatment[]): Recommendation[] {
+  const tagged = treatments.map((t) => ({ t, concerns: t.concerns?.length ? t.concerns : inferTreatmentTags(t.name, t.description, t.category).concerns }));
   const out: Recommendation[] = [];
   const used = new Set<string>();
   for (const c of concerns) {
     if (c.score < 25 || out.length >= 3) break;
-    const t = treatments.find((t) => !used.has(t.id) && t.concerns.includes(c.id));
-    if (!t) continue;
-    used.add(t.id);
+    const hit = tagged.find((x) => !used.has(x.t.id) && x.concerns.includes(c.id));
+    if (!hit) continue;
+    used.add(hit.t.id);
     const label = CONCERN_BY_ID[c.id]?.label.toLowerCase() ?? c.id;
-    out.push({ treatment_id: t.id, why: `${t.name} targets ${label}, which the scanner rated ${100 - c.score} out of 100 on your photo.` });
+    out.push({ treatment_id: hit.t.id, why: `Matched to your ${label}, which the scanner rated ${100 - c.score} out of 100 on your photo.` });
+  }
+  if (!out.length && treatments.length) {
+    const t = treatments.find((t) => t.popular) ?? treatments[0];
+    out.push({ treatment_id: t.id, why: `Nothing on this menu is tagged for your top findings yet. ${t.name} is a popular starting point here; a consultation can map it to your scan.` });
   }
   return out;
 }
