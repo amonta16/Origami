@@ -49,6 +49,8 @@ Total 1:53, seven seconds under the cap. The dissolves overlap neighboring shots
 
 ## Voice actor lines
 
+**Recorded Sun ~7 AM and in the rough cut** (`build.py` `VO_TAKES`). His read differs slightly: line 2 ends "Most clients skip.", line 4 says "skin marks" and "the result", and in both takes line 8 may say "for one condition" (the caption keeps "Her one condition").
+
 Calm, warm, confident; not salesy. About 150 words per minute. Each line has to fit its window; it's fine to
 come in a little short.
 
