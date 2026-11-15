@@ -162,6 +162,8 @@ export type ScanResults = {
   provider: string;
   model: string;
   disclaimer: string;
+  /** Per-concern overlay images from the scanner (YouCam masks), aligned to the analyzed photo. Short-lived URLs. */
+  overlays?: Array<{ id: string; url: string }>;
 };
 
 export type Landmark = { x: number; y: number; z: number };

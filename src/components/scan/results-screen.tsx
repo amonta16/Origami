@@ -86,6 +86,16 @@ export function ResultsScreen({
 
   const price = (t: Treatment) => (t.price_cents != null ? `$${Math.round(t.price_cents / 100).toLocaleString()}` : "Price on consultation");
   const sevLabel = (s: string) => (s === "none" ? "Clear" : s[0].toUpperCase() + s.slice(1));
+  // The scanner measures paired zones together (both under-eyes, both cheeks); the vision models
+  // pick a side on purpose. Label accordingly.
+  const PAIR_LABEL: Record<string, string> = { under_eye: "Under-eyes", cheek: "Cheeks", crows_feet: "Crow's feet", nasolabial: "Smile lines" };
+  const zoneLabel = (c: ScanResults["concerns"][number]) => {
+    if (results.provider === "youcam") {
+      const base = c.zone.replace(/_(left|right)$/, "");
+      if (base !== c.zone && PAIR_LABEL[base]) return PAIR_LABEL[base];
+    }
+    return ZONE_LABEL[c.zone];
+  };
 
   return (
     <div className="relative mx-auto min-h-dvh w-full max-w-phone bg-white pb-28">
@@ -124,7 +134,10 @@ export function ResultsScreen({
 
       {/* heat map */}
       <section className="mt-6 px-4">
-        <HeatmapPhoto photo={capture.photo} landmarks={capture.landmarks} concerns={results.concerns} active={active} />
+        <HeatmapPhoto photo={capture.photo} landmarks={capture.landmarks} concerns={results.concerns} active={active} overlays={results.overlays} />
+        {results.overlays?.length ? (
+          <p className="mt-2 text-[11px] text-ink-muted">Tap a concern to see the scanner&rsquo;s own view of it on your photo.</p>
+        ) : null}
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
@@ -163,7 +176,7 @@ export function ResultsScreen({
                     <Chip severity={c.severity}>{sevLabel(c.severity)}</Chip>
                   </div>
                   <p className="mt-1 text-[12px] leading-snug text-ink-muted">
-                    {ZONE_LABEL[c.zone]} · {c.reason}
+                    {zoneLabel(c)} · {c.reason}
                   </p>
                 </div>
                 <span className="font-display font-display-numeral text-[20px] text-ink-muted">{100 - c.score}</span>

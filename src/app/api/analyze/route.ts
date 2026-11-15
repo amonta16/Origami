@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { analysisSchema, analysisSchemaGemini } from "@/lib/analysis/schema";
 import { analysisSystemPrompt, analysisUserPrompt } from "@/lib/analysis/prompt";
 import { openaiStructured, OPENAI_VISION_MODEL } from "@/lib/analysis/openai";
-import { analysisModel } from "@/lib/analysis/models";
+import { analysisModel, type AnalysisProvider } from "@/lib/analysis/models";
 import { geminiStructured, GEMINI_VISION_MODEL } from "@/lib/analysis/gemini";
+import { youcamAnalyze, youcamConfigured, YOUCAM_MODEL_ID } from "@/lib/analysis/youcam";
 import { severityFromScore } from "@/lib/concerns";
 import { getClinicBySlug, getTreatments } from "@/lib/data/clinics";
 import { isSupabaseConfigured, supabaseAdmin, supabaseEnv } from "@/lib/supabase/server";
@@ -36,14 +37,21 @@ type Body = {
   rerun?: boolean;
 };
 
+/** Keys present on the server, per provider. Never the values. */
+function configured(p: AnalysisProvider) {
+  if (p === "youcam") return youcamConfigured();
+  if (p === "openai") return Boolean(process.env.OPENAI_API_KEY);
+  return Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
+}
+
+/** Preference order: the measured scanner first, then the vision models. ANALYSIS_PROVIDER overrides. */
+const PROVIDER_ORDER: AnalysisProvider[] = ["youcam", "openai", "gemini"];
+
 /** Which analysis provider the server would use right now, from env alone. */
-function pickProvider(): "openai" | "gemini" | null {
-  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
-  const hasGemini = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
-  const wanted = process.env.ANALYSIS_PROVIDER;
-  if (wanted === "gemini" && hasGemini) return "gemini";
-  if (wanted === "openai" && hasOpenAI) return "openai";
-  return hasOpenAI ? "openai" : hasGemini ? "gemini" : null;
+function pickProvider(): AnalysisProvider | null {
+  const wanted = process.env.ANALYSIS_PROVIDER as AnalysisProvider | undefined;
+  if (wanted && PROVIDER_ORDER.includes(wanted) && configured(wanted)) return wanted;
+  return PROVIDER_ORDER.find(configured) ?? null;
 }
 
 /**
@@ -59,9 +67,11 @@ export async function GET(req: Request) {
   // ?model= lets the lab try another model id without a redeploy; ?nothink=1 turns thinking off on Gemini.
   const modelOverride = params.get("model")?.trim() || null;
   const noThink = params.get("nothink") === "1";
-  const model = modelOverride ?? (provider === "openai" ? OPENAI_VISION_MODEL : provider === "gemini" ? GEMINI_VISION_MODEL : null);
+  const model =
+    modelOverride ?? (provider === "youcam" ? YOUCAM_MODEL_ID : provider === "openai" ? OPENAI_VISION_MODEL : provider === "gemini" ? GEMINI_VISION_MODEL : null);
   const out: Record<string, unknown> = {
     analysis: { provider, model },
+    providers: Object.fromEntries(PROVIDER_ORDER.map((p) => [p, configured(p)])),
     supabase: { configured: isSupabaseConfigured() },
   };
   if (!ping) return NextResponse.json(out);
@@ -98,6 +108,11 @@ export async function GET(req: Request) {
 
   const probeProvider = async () => {
     if (!provider) return;
+    if (provider === "youcam") {
+      // No ping call exists that doesn't spend a YouCam credit; the key's presence is the check.
+      out.analysis = { provider, model, ok: true, note: "key present; a real scan is the only test" };
+      return;
+    }
     const t0 = Date.now();
     try {
       let res: Response;
@@ -225,7 +240,7 @@ export async function POST(req: Request) {
   const provider = pickProvider();
   if (!provider) {
     return NextResponse.json(
-      { error: "Analysis isn't configured yet (set OPENAI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY on the server)." },
+      { error: "Analysis isn't configured yet (set YOUCAM_API_KEY, OPENAI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY on the server)." },
       { status: 503 },
     );
   }
@@ -249,12 +264,20 @@ export async function POST(req: Request) {
   // Tester-picked model (results screen "Model" buttons): runs alone, no silent fallback.
   const picked = analysisModel(body.model);
   if (body.model && !picked) return NextResponse.json({ error: "Unknown model" }, { status: 400 });
-  if (picked?.provider === "openai" && !process.env.OPENAI_API_KEY) {
-    return NextResponse.json({ error: "OpenAI isn't configured on the server yet." }, { status: 503 });
+  if (picked && !configured(picked.provider)) {
+    const name = picked.provider === "youcam" ? "YouCam" : picked.provider === "openai" ? "OpenAI" : "Gemini";
+    return NextResponse.json({ error: `${name} isn't configured on the server yet.` }, { status: 503 });
   }
   const session = typeof body.session === "string" ? body.session.slice(0, 64) : null;
 
-  const runWith = async (p: "openai" | "gemini"): Promise<{ raw: Raw; model: string }> => {
+  const runWith = async (p: AnalysisProvider): Promise<{ raw: Raw; model: string }> => {
+    if (p === "youcam") {
+      const out = await youcamAnalyze({ photo: body.photo, firstName: body.firstName ?? null, treatments });
+      const { raw: _features, task_id: _task, ...rest } = out;
+      void _features;
+      void _task;
+      return { raw: rest, model: YOUCAM_MODEL_ID };
+    }
     if (p === "openai") {
       const out = await openaiStructured<Raw>({
         system,
@@ -284,13 +307,10 @@ export async function POST(req: Request) {
     };
   };
 
-  // Primary provider first; if it errors (empty balance, outage, bad output) try the other
-  // one when its key exists, so a patient never hits a dead end over a billing problem.
-  const other: "openai" | "gemini" = provider === "openai" ? "gemini" : "openai";
-  const otherConfigured =
-    other === "openai" ? Boolean(process.env.OPENAI_API_KEY) : Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
-  const chain = picked ? [picked.provider] : otherConfigured ? [provider, other] : [provider];
-  let used: "openai" | "gemini" = chain[0];
+  // Primary provider first; if it errors (empty balance, outage, bad photo for the scanner) walk the
+  // other configured providers, so a patient never hits a dead end over a billing problem.
+  const chain: AnalysisProvider[] = picked ? [picked.provider] : [provider, ...PROVIDER_ORDER.filter((p) => p !== provider && configured(p))];
+  let used: AnalysisProvider = chain[0];
   const failures: Array<{ provider: string; error: string }> = [];
   for (const p of chain) {
     try {
@@ -337,10 +357,13 @@ export async function POST(req: Request) {
     provider: used,
     model,
     disclaimer: DISCLAIMER,
+    ...(raw.overlays?.length ? { overlays: raw.overlays } : {}),
   };
 
-  // Tester log: structured results only, never the photo.
-  await logRun({ provider: used, model_served: model, ok: true, results });
+  // Tester log: structured results only, never the photo (overlay URLs are signed and expire, so they stay out too).
+  const { overlays: _ov, ...loggable } = results;
+  void _ov;
+  await logRun({ provider: used, model_served: model, ok: true, results: loggable });
 
   // Persist when Supabase is configured (photo + derived data, 72 h retention). Model re-runs on the
   // same photo don't create another scan or upload the photo again.

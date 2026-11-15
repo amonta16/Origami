@@ -23,6 +23,7 @@ export function HeatmapPhoto({
   landmarks,
   concerns,
   active,
+  overlays,
   pills = 3,
   className,
 }: {
@@ -31,12 +32,16 @@ export function HeatmapPhoto({
   concerns: ConcernResult[];
   /** concern id to highlight; null = all */
   active: string | null;
+  /** scanner-drawn overlay images per concern (same framing as the photo); shown instead of our tint when selected */
+  overlays?: Array<{ id: string; url: string }>;
   /** how many top-concern pills to float on the photo */
   pills?: number;
   className?: string;
 }) {
   const ref = React.useRef<HTMLCanvasElement>(null);
   const [ratio, setRatio] = React.useState(3 / 4);
+  const overlay = active ? overlays?.find((o) => o.id === active) ?? null : null;
+  const [overlayReady, setOverlayReady] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let alive = true;
@@ -50,7 +55,9 @@ export function HeatmapPhoto({
       cv.height = H;
       const ctx = cv.getContext("2d")!;
       ctx.drawImage(img, 0, 0, W, H);
-      const shown = concerns.filter((c) => (active ? c.id === active : c.score >= 15));
+      // "All" shows the top few only: a scanner can return a dozen whole-face readings, and
+      // stacking all their tints paints the face over instead of pointing at anything.
+      const shown = active ? concerns.filter((c) => c.id === active) : concerns.filter((c) => c.score >= 15).slice(0, pills);
       const items = shown.map((c) => {
         const def = CONCERN_BY_ID[c.id];
         const zones: ZoneId[] = def?.zones.includes(c.zone) || !def ? [c.zone] : def.zones;
@@ -61,7 +68,7 @@ export function HeatmapPhoto({
     return () => {
       alive = false;
     };
-  }, [photo, landmarks, concerns, active]);
+  }, [photo, landmarks, concerns, active, pills]);
 
   const shownPills = (active ? concerns.filter((c) => c.id === active) : concerns.slice(0, pills)).map((c, i) => {
     const b = zoneBounds(c.zone, landmarks);
@@ -74,6 +81,19 @@ export function HeatmapPhoto({
   return (
     <div className={cn("relative overflow-hidden rounded-card bg-ink", className)} style={{ aspectRatio: `${ratio}` }}>
       <canvas ref={ref} className="absolute inset-0 h-full w-full" aria-label="Your photo with concern heat map" role="img" />
+      {overlay && (
+        // eslint-disable-next-line @next/next/no-img-element -- signed, short-lived scanner URL; not an optimizable asset
+        <img
+          key={overlay.url}
+          src={overlay.url}
+          alt={`Scanner view of ${CONCERN_BY_ID[overlay.id]?.label.toLowerCase() ?? overlay.id}`}
+          onLoad={() => setOverlayReady(overlay.url)}
+          className={cn("absolute inset-0 h-full w-full object-cover transition-opacity duration-500", overlayReady === overlay.url ? "opacity-100" : "opacity-0")}
+        />
+      )}
+      {overlay && (
+        <span className="absolute left-2 top-2 rounded-chip bg-ink/80 px-2 py-0.5 text-[10px] font-medium tracking-wide text-white">SCANNER VIEW</span>
+      )}
       {shownPills.map(({ c, x, y, left, i }) => (
         <span
           key={c.id + c.zone + i}

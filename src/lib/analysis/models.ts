@@ -3,10 +3,13 @@
  * Gemini ids verified against this key's model list on Nov 14 2026; latency measured on a
  * one-word prompt. Each Gemini model has its own small free daily quota.
  */
-export type AnalysisModel = { id: string; provider: "gemini" | "openai"; label: string; note: string };
+export type AnalysisProvider = "youcam" | "gemini" | "openai";
+export type AnalysisModel = { id: string; provider: AnalysisProvider; label: string; note: string };
 
 export const ANALYSIS_MODELS: AnalysisModel[] = [
-  { id: "gemini-3.5-flash", provider: "gemini", label: "Gemini 3.5 Flash", note: "Default · balanced" },
+  // Perfect Corp's skin-analysis engine: measured concern scores plus zone masks. Default when its key is set.
+  { id: "youcam-skin-v2", provider: "youcam", label: "YouCam", note: "Default · Perfect Corp skin-analysis engine, measured scores" },
+  { id: "gemini-3.5-flash", provider: "gemini", label: "Gemini 3.5 Flash", note: "Vision model · balanced" },
   { id: "gemini-3-flash-preview", provider: "gemini", label: "Gemini 3 Flash", note: "Previous default" },
   { id: "gemini-3.1-pro-preview", provider: "gemini", label: "Gemini 3.1 Pro", note: "Most careful · slow" },
   { id: "gemini-3.5-flash-lite", provider: "gemini", label: "Gemini 3.5 Flash Lite", note: "Fastest" },
