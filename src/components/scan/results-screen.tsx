@@ -9,6 +9,7 @@ import type { Capture, Clinic, ScanResults, SimProvider, Treatment } from "@/lib
 import { BeforeAfter } from "./before-after";
 import { ModelBar, SimPicker, type ModelState } from "./model-bar";
 import { HeatmapPhoto } from "./heatmap-photo";
+import { InlineAfter } from "./inline-after";
 import { MeshViewer } from "./mesh-viewer";
 
 export function ResultsScreen({
@@ -132,6 +133,20 @@ export function ResultsScreen({
           </Card>
         )}
       </section>
+
+      {/* the after, already rendered: swipe to compare */}
+      {recommended.length > 0 && (
+        <InlineAfter
+          treatments={recommended.map((r) => r.treatment)}
+          capture={capture}
+          photoId={photoId}
+          session={models?.session}
+          clinicSlug={clinic.slug}
+          price={(t) => `${price(t)} at ${clinic.name}`}
+          onBook={(t) => onEvent?.("book_clicked", { from: "inline_after", treatment: t.name })}
+          onEvent={onEvent}
+        />
+      )}
 
       {/* heat map */}
       <section className="mt-6 px-4">

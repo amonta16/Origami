@@ -17,6 +17,7 @@ export function BeforeAfter({
   initialDose = DOSES[0].value,
   onDoseChange,
   className,
+  inline = false,
 }: {
   original: string;
   composite: string;
@@ -25,6 +26,8 @@ export function BeforeAfter({
   initialDose?: number;
   onDoseChange?: (dose: number) => void;
   className?: string;
+  /** on a scrolling page: vertical swipes scroll the page, horizontal swipes move the split */
+  inline?: boolean;
 }) {
   const afterRef = React.useRef<HTMLCanvasElement>(null);
   const imgs = React.useRef<{ o: HTMLImageElement; c: HTMLImageElement } | null>(null);
@@ -64,7 +67,7 @@ export function BeforeAfter({
     <div className={cn("select-none", className)}>
       <div
         ref={wrapRef}
-        className="relative w-full touch-none overflow-hidden rounded-card bg-ink"
+        className={cn("relative w-full overflow-hidden rounded-card bg-ink", inline ? "touch-pan-y" : "touch-none")}
         style={{ aspectRatio: `${width} / ${height}` }}
         onPointerDown={(e) => {
           (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
